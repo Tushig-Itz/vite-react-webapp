@@ -14,9 +14,12 @@ export default function handler(req, res) {
     let params = [];
 
     if (search) {
+      // Normalize search term (remove special chars, lowercase)
+      const normalized = search.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      // Search both model and model_norm
       query += ' WHERE model LIKE ? OR model_norm LIKE ? OR series LIKE ?';
-      const searchTerm = `%${search}%`;
-      params = [searchTerm, searchTerm, searchTerm];
+      params = [`%${search}%`, `%${normalized}%`, `%${search}%`];
     }
 
     query += ' ORDER BY model';

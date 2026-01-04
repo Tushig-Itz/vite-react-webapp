@@ -90,17 +90,19 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">FortiGate Specs Lookup</h1>
           <p className="text-gray-400">Quick reference for FortiGate firewall specifications</p>
         </div>
 
+        {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search by model (e.g., FG-100F, 200F, etc.)"
+              placeholder="Search by model (e.g., FG-100F, 70F, etc.)"
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -108,6 +110,7 @@ function App() {
           </div>
         </div>
 
+        {/* Results List */}
         {devices.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {devices.map((device) => (
@@ -135,6 +138,7 @@ function App() {
           </div>
         )}
 
+        {/* Device Details */}
         {selectedDevice && (
           <div className="space-y-4">
             <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -143,46 +147,56 @@ function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Firewall Throughput */}
               <SpecCard icon={Zap} title="Firewall Throughput">
                 <SpecRow label="1518 byte packets" value={selectedDevice.firewall_throughput_1518_gbps} unit="Gbps" />
                 <SpecRow label="512 byte packets" value={selectedDevice.firewall_throughput_512_gbps} unit="Gbps" />
                 <SpecRow label="64 byte packets" value={selectedDevice.firewall_throughput_64_gbps} unit="Gbps" />
               </SpecCard>
 
+              {/* Security Performance */}
               <SpecCard icon={Shield} title="Security Performance">
                 <SpecRow label="IPS Throughput" value={selectedDevice.ips_throughput_gbps} unit="Gbps" />
                 <SpecRow label="NGFW Throughput" value={selectedDevice.ngfw_throughput_gbps} unit="Gbps" />
                 <SpecRow label="Threat Protection" value={selectedDevice.threat_protection_gbps} unit="Gbps" />
+                <SpecRow label="AV Throughput" value={selectedDevice.av_throughput_gbps} unit="Gbps" />
                 <SpecRow label="SSL Proxy" value={selectedDevice.ssl_proxy_throughput_gbps} unit="Gbps" />
               </SpecCard>
 
+              {/* VPN Performance */}
               <SpecCard icon={Wifi} title="VPN Performance">
                 <SpecRow label="IPsec VPN" value={selectedDevice.ipsec_vpn_throughput_gbps} unit="Gbps" />
                 <SpecRow label="Gateway-to-Gateway VPN" value={formatNumber(selectedDevice.gateway_to_gateway_vpn)} unit="tunnels" />
                 <SpecRow label="SSL VPN Users (Max)" value={formatNumber(selectedDevice.ssl_vpn_users_max)} unit="users" />
               </SpecCard>
 
+              {/* Sessions & Capacity */}
               <SpecCard icon={HardDrive} title="Sessions & Capacity">
                 <SpecRow label="Concurrent Sessions" value={formatNumber(selectedDevice.concurrent_sessions)} />
                 <SpecRow label="New Sessions/sec" value={formatNumber(selectedDevice.new_sessions_per_sec)} />
                 <SpecRow label="Firewall Policies (Max)" value={formatNumber(selectedDevice.firewall_policy_max)} />
               </SpecCard>
 
+              {/* Virtualization */}
               <SpecCard icon={Users} title="Virtualization">
                 <SpecRow label="Virtual Systems (Default)" value={selectedDevice.virtual_systems_default} />
                 <SpecRow label="Virtual Systems (Max)" value={selectedDevice.virtual_systems_max} />
               </SpecCard>
 
+              {/* Interfaces */}
               <SpecCard icon={Network} title="Interfaces">
                 <SpecRow label="GE RJ45 Ports" value={selectedDevice.ge_rj45_ports} />
                 <SpecRow label="GE SFP Ports" value={selectedDevice.ge_sfp_ports} />
                 <SpecRow label="10GE SFP+ Ports" value={selectedDevice.ten_ge_sfp_ports} />
                 <SpecRow label="FortiLink Ports" value={selectedDevice.fortilink_ports} />
+                <SpecRow label="FortiLink Slots" value={selectedDevice.fortilink_slots} />
+                <SpecRow label="Management Ports" value={selectedDevice.mgmt_ports} />
                 <SpecRow label="WAN Ports" value={selectedDevice.wan_ports} />
                 <SpecRow label="HA Ports" value={selectedDevice.ha_ports} />
               </SpecCard>
             </div>
 
+            {/* Interface Details */}
             {selectedDevice.interface_raw && (
               <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
                 <h3 className="font-semibold text-gray-200 mb-2">Interface Details</h3>
@@ -192,6 +206,7 @@ function App() {
           </div>
         )}
 
+        {/* No selection prompt */}
         {!selectedDevice && devices.length > 0 && (
           <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
             <Network className="w-16 h-16 text-gray-600 mx-auto mb-4" />
