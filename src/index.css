@@ -10,12 +10,15 @@ body {
   color: #e4e4e7;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  overflow-y: scroll;
+  scroll-behavior: smooth;
 }
 
 #root {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
+  padding-bottom: 4rem;
 }
 
 /* Header */
@@ -102,22 +105,29 @@ body {
   font-size: 1.25rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
+  color: #ffffff;
 }
 
 .device-card .series {
-  color: #9ca3af;
+  color: #d1d5db;
   font-size: 0.875rem;
   margin-bottom: 0.75rem;
 }
 
 .device-card .specs {
   font-size: 0.875rem;
+  color: #e5e7eb;
 }
 
 .device-card .spec-line {
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.25rem;
+}
+
+.device-card .spec-line span:last-child {
+  color: #ffffff;
+  font-weight: 500;
 }
 
 /* Spec Details */
