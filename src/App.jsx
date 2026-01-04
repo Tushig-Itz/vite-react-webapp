@@ -67,9 +67,9 @@ function App() {
   );
 
   const SpecRow = ({ label, value, unit = '' }) => (
-    <div className="flex justify-between items-center py-2.5 border-b border-gray-700/50 last:border-0">
-      <span className="text-gray-400 text-sm flex-shrink-0 pr-4">{label}</span>
-      <span className="text-gray-200 font-medium text-right whitespace-nowrap">
+    <div className="grid grid-cols-2 gap-4 py-2.5 border-b border-gray-700/50 last:border-0">
+      <span className="text-gray-400 text-sm">{label}</span>
+      <span className="text-gray-200 font-medium text-right">
         {value || value === 0 ? (
           <>
             {value}
