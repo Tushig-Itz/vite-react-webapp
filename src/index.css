@@ -71,15 +71,59 @@ body {
   color: #9ca3af;
 }
 
-/* Device Grid */
+/* Device Grid - Single Row Scrollable */
 .device-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
   gap: 1rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 1rem;
+  scroll-behavior: smooth;
+  
+  /* Hide scrollbar but keep functionality */
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+.device-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.device-grid::-webkit-scrollbar-track {
+  background: #1f2937;
+  border-radius: 4px;
+}
+
+.device-grid::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.device-grid::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+/* Scroll hint for device grid */
+.device-grid::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 1rem;
+  width: 60px;
+  background: linear-gradient(to left, rgba(26, 26, 46, 0.9), transparent);
+  pointer-events: none;
+}
+
+.search-container {
+  position: relative;
   margin-bottom: 2rem;
 }
 
 .device-card {
+  min-width: 280px;
+  max-width: 280px;
+  flex-shrink: 0;
   padding: 1.5rem;
   background: rgba(31, 41, 55, 0.5);
   backdrop-filter: blur(10px);
