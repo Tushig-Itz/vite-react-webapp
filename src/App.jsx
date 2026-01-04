@@ -67,13 +67,13 @@ function App() {
   );
 
   const SpecRow = ({ label, value, unit = '' }) => (
-    <div className="flex justify-between items-center py-2 border-b border-gray-700/50 last:border-0">
+    <div className="flex justify-between items-center py-2.5 border-b border-gray-700/50 last:border-0 gap-4">
       <span className="text-gray-400 text-sm">{label}</span>
-      <span className="text-gray-200 font-medium">
+      <span className="text-gray-200 font-medium text-right">
         {value || value === 0 ? (
           <>
             {value}
-            {unit && <span className="text-gray-400 ml-1">{unit}</span>}
+            {unit && <span className="text-gray-400 ml-2">{unit}</span>}
           </>
         ) : (
           <span className="text-gray-500">N/A</span>
