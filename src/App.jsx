@@ -121,9 +121,10 @@ function App() {
     // Interface row
     if (device.interface_raw) {
       const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
-      worksheet.mergeCells(`C${intRow.number}:D${intRow.number}`);
-      
-      // Apply borders
+      intRow.height = 50;
+      intRow.getCell(1).alignment = {vertical: 'middle'};
+      intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+      intRow.getCell(2).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
       for (let i = 1; i <= 4; i++) {
         intRow.getCell(i).border = {
           top: { style: 'thin' },
@@ -132,10 +133,6 @@ function App() {
           right: { style: 'thin' }
         };
       }
-      
-      intRow.font = { size: 11 };
-      intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-      intRow.getCell(3).alignment = { wrapText: true, vertical: 'top' };
     }
 
     addRow('Firewall Throughput', '', 
