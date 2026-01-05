@@ -63,7 +63,7 @@ function App() {
       { width: 35 }, // Spec description
       { width: 25 }, // Customer value
       { width: 25 }, // Device value
-      { width: 20 }  // Comparison value
+      { width: 18 }  // Comparison value
     ];
 
     // Title row
@@ -124,7 +124,7 @@ function App() {
       intRow.height = 50;
       intRow.getCell(1).alignment = {vertical: 'middle'};
       intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-      intRow.getCell(2).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+      intRow.getCell(3).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
       for (let i = 1; i <= 4; i++) {
         intRow.getCell(i).border = {
           top: { style: 'thin' },
