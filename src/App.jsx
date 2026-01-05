@@ -60,27 +60,34 @@ function App() {
   worksheet.columns = [
     { width: 35 },
     { width: 20 },
+    { width: 20 }
   ];
 
-  const titleRow = worksheet.addRow(['FortiGate Specification Sheet']);
+  const titleRow = worksheet.addRow(['FortiGate Comparisation Sheet']);
   titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
   titleRow.alignment = {
     horizontal: 'center',
     vertical: 'middle'
   }
-  
-  worksheet.mergeCells('A1:B1');
-  
   worksheet.addRow([]);
-
-  const addSection = (title, rows) => {
-    const sectionRow = worksheet.addRow([title]);
+  const sectionRow = worksheet.addRow([description, model, compare]);
     sectionRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
     sectionRow.fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FFF3F4F6' }
     };
+  
+  worksheet.mergeCells('A1:C1');
+
+  const addSection = (rows) => {
+    // const sectionRow = worksheet.addRow([title]);
+    // sectionRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
+    // sectionRow.fill = {
+    //   type: 'pattern',
+    //   pattern: 'solid',
+    //   fgColor: { argb: 'FFF3F4F6' }
+    // };
     
     rows.forEach(([label, value]) => {
       const row = worksheet.addRow([
@@ -94,68 +101,58 @@ function App() {
         vertical: 'middle'
       }
     });
-    
-    worksheet.addRow([]);
   };
-
-  addSection('Model Information', [
-    ['Family', device.family],
-    ['Model', device.model],
-  ]);
-  addSection('Firewall Throughput', [
-    ['1518 byte packets', device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : "N/A"],
-    ['512 byte packets', device.firewall_throughput_512_gbps ? `${device.firewall_throughput_512_gbps} Gbps` : "N/A"],
-    ['64 byte packets', device.firewall_throughput_64_gbps ? `${device.firewall_throughput_64_gbps} Gbps` : "N/A"]
-  ]);
-  addSection('Security Performance', [
-    ['IPS Throughput', device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : "N/A"],
-    ['NGFW Throughput', device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : "N/A"],
-    ['Threat Protection', device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : "N/A"],
-    ['AV Throughput', device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : "N/A"],
-    ['SSL Proxy', device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : "N/A"]
-  ]);
-  addSection('VPN Performance', [
-    ['IPsec VPN', device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : "N/A"],
-    ['Gateway-to-Gateway VPN', device.gateway_to_gateway_vpn ? `${device.gateway_to_gateway_vpn} tunnels` : "N/A"],
-    ['SSL VPN Users (Max)', device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max} users` : "N/A"]
-  ]);
-  addSection('Sessions & Capacity', [
-    ['Concurrent Sessions', formatNumber(device.concurrent_sessions)],
-    ['New Sessions/sec', formatNumber(device.new_sessions_per_sec)],
-    ['Firewall Policies (Max)', formatNumber(device.firewall_policy_max)]
-  ]);
-  addSection('Virtualization', [
-    ['Virtual Systems (Default)', device.virtual_systems_default],
-    ['Virtual Systems (Max)', device.virtual_systems_max]
-  ]);
-  addSection('Interfaces', [
-    ['GE RJ45 Ports', device.ge_rj45_ports],
-    ['GE SFP Ports', device.ge_sfp_ports],
-    ['10GE SFP+ Ports', device.ten_ge_sfp_ports],
-    ['FortiLink Ports', device.fortilink_ports],
-    ['FortiLink Slots', device.fortilink_slots],
-    ['Management Ports', device.mgmt_ports],
-    ['WAN Ports', device.wan_ports],
-    ['HA Ports', device.ha_ports]
+  sectionRow([
+    ['Spec description', device.model, "Comparing value"],
   ]);
   if (device.interface_raw) {
-    const detailsRow = worksheet.addRow(['Interface Details']);
-    detailsRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
-    detailsRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFF3F4F6' }
-    };
-    
-    const ifaceRow = worksheet.addRow([device.interface_raw]);
-    worksheet.mergeCells(`A${ifaceRow.number}:C${ifaceRow.number}`);
-    ifaceRow.font = { size: 11 };
-    ifaceRow.alignment = { wrapText: true };
-    
-    worksheet.addRow([]);
+    // detailsRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
+    // detailsRow.fill = {
+    //   type: 'pattern',
+    //   pattern: 'solid',
+    //   fgColor: { argb: 'FFF3F4F6' }
+    // };
+    const intRow = worksheet.addRow(['', device.interface_raw]);
+    worksheet.mergeCells(`A${intRow.number}:C${intRow.number}`);
+    intRow.font = { size: 11 };
+    intRow.alignment = { wrapText: true };
   }
+  
+  addSection([
+    ['Firewall Throughput', device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : "N/A"],
+    // ['512 byte packets', device.firewall_throughput_512_gbps ? `${device.firewall_throughput_512_gbps} Gbps` : "N/A"],
+    // ['64 byte packets', device.firewall_throughput_64_gbps ? `${device.firewall_throughput_64_gbps} Gbps` : "N/A"]
+  ]);
+  addSection([
+    ['NGFW Throughput', device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : "N/A"],
+    ['Threat Protection', device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : "N/A"],
+    ['Concurrent Sessions', formatNumber(device.concurrent_sessions)],
+    ['New Sessions/sec', formatNumber(device.new_sessions_per_sec)],
+    ['IPS Throughput', device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : "N/A"],
+    ['AV Throughput', device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : "N/A"],
+    ['IPsec VPN Throughput', device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : "N/A"],
+    ['SSL Proxy Throughput', device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : "N/A"]
+
+    ['Virtual Systems (default/max)', device.virtual_systems_max]
+    ['SSL VPN Users (Max)', device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max} users` : "N/A"]
+    // ['Virtual Systems (Default)', device.virtual_systems_default],
+    ['Gateway-to-Gateway VPN', device.gateway_to_gateway_vpn ? `${device.gateway_to_gateway_vpn} tunnels` : "N/A"],
+    ['Firewall Policies', formatNumber(device.firewall_policy_max)]
+
+
+  // addSection([
+  //   ['GE RJ45 Ports', device.ge_rj45_ports],
+  //   ['GE SFP Ports', device.ge_sfp_ports],
+  //   ['10GE SFP+ Ports', device.ten_ge_sfp_ports],
+  //   ['FortiLink Ports', device.fortilink_ports],
+  //   ['FortiLink Slots', device.fortilink_slots],
+  //   ['Management Ports', device.mgmt_ports],
+  //   ['WAN Ports', device.wan_ports],
+  //   ['HA Ports', device.ha_ports]
+  ]);
+  
   if (device.release_year || device.support_years || device.datasheet_date || device.datasheet_url) {
-    addSection('Product Information', [
+    addSection([
       ['Release Year', device.release_year],
       ['Support Period', device.support_years ? `${device.support_years} years` : null]
     ].filter(row => row[1]));
