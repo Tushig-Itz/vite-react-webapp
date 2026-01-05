@@ -64,6 +64,7 @@ function App() {
 
   const titleRow = worksheet.addRow(['FortiGate Specification Sheet']);
   titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
+  
   worksheet.mergeCells('A1:B1');
   
   worksheet.addRow([]);
@@ -71,6 +72,10 @@ function App() {
   const addSection = (title, rows) => {
     const sectionRow = worksheet.addRow([title]);
     sectionRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
+    sectionRow.alignment = {
+      horizontal: 'center',
+      vertical: 'middle'
+    }
     sectionRow.fill = {
       type: 'pattern',
       pattern: 'solid',
@@ -95,21 +100,21 @@ function App() {
     ['Model', device.model],
   ]);
   addSection('Firewall Throughput', [
-    ['1518 byte packets', `${device.firewall_throughput_1518_gbps} Gbps`],
-    ['512 byte packets', `${device.firewall_throughput_512_gbps} Gbps`],
-    ['64 byte packets', `${device.firewall_throughput_64_gbps} Gbps`]
+    ['1518 byte packets', device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : "N/A"],
+    ['512 byte packets', device.firewall_throughput_512_gbps ? `${device.firewall_throughput_512_gbps} Gbps` : "N/A"],
+    ['64 byte packets', device.firewall_throughput_64_gbps ? `${device.firewall_throughput_64_gbps} Gbps` : "N/A"]
   ]);
   addSection('Security Performance', [
-    ['IPS Throughput', `${device.ips_throughput_gbps} Gbps`],
-    ['NGFW Throughput', `${device.ngfw_throughput_gbps} Gbps`],
-    ['Threat Protection', `${device.threat_protection_gbps} Gbps`],
-    ['AV Throughput', `${device.av_throughput_gbps} Gbps`],
-    ['SSL Proxy', `${device.ssl_proxy_throughput_gbps} Gbps`]
+    ['IPS Throughput', device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : "N/A"],
+    ['NGFW Throughput', device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : "N/A"],
+    ['Threat Protection', device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : "N/A"],
+    ['AV Throughput', device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : "N/A"],
+    ['SSL Proxy', device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : "N/A"]
   ]);
   addSection('VPN Performance', [
-    ['IPsec VPN', `${device.ipsec_vpn_throughput_gbps} Gbps`],
-    ['Gateway-to-Gateway VPN', `${device.gateway_to_gateway_vpn} tunnels`],
-    ['SSL VPN Users (Max)', `${device.ssl_vpn_users_max} users`]
+    ['IPsec VPN', device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : "N/A"],
+    ['Gateway-to-Gateway VPN', device.gateway_to_gateway_vpn ? `${device.gateway_to_gateway_vpn} tunnels` : "N/A"],
+    ['SSL VPN Users (Max)', device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max} users` : "N/A"]
   ]);
   addSection('Sessions & Capacity', [
     ['Concurrent Sessions', formatNumber(device.concurrent_sessions)],
@@ -151,7 +156,7 @@ function App() {
       ['Release Year', device.release_year],
       ['Support Period', device.support_years ? `${device.support_years} years` : null],
       ['Datasheet Date', device.datasheet_date],
-      ['Datasheet URL', device.datasheet_url]
+      ['Datasheet URL', HYPERLINK(device.datasheet_url)]
     ].filter(row => row[1]));
   }
 
