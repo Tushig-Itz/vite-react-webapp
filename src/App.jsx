@@ -96,7 +96,7 @@ const exportToExcel = async (device) => {
     if (device.interface_raw) {
       const intRow = worksheet.addRow(['Interface', device.interface_raw, '']);
       intRow.font = { size: 11 };
-      intRow.dimensions = {height: 50};
+      intRow.height = 50;
       intRow.getCell(1).alignment = {vertical: 'middle'};
       intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
       intRow.getCell(2).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
