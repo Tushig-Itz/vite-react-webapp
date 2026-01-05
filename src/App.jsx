@@ -61,6 +61,7 @@ const exportToExcel = async (device) => {
     // Set column widths
     worksheet.columns = [
       { width: 35 }, // Spec description
+      { width: 25 }, // Customer value
       { width: 25 }, // Device value
       { width: 20 }  // Comparison value
     ];
@@ -69,19 +70,19 @@ const exportToExcel = async (device) => {
     const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
     titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
     titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
-    worksheet.mergeCells('A1:C1');
+    worksheet.mergeCells('A1:D1');
     
     worksheet.addRow([]); // Empty row
 
     // Header row
     const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн үзүүлэлт', device.model, 'Харьцуулалт']);
     headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill = {
+    headerRow.fill(4, 1, 4) = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FF3B82F6' }
     };
-    headerRow.border = {
+    headerRow.border(4, 1, 4) = {
       top: {style: "thin"},
       bottom: {style: "thick"},
       left: {style: "thin"},
@@ -94,7 +95,7 @@ const exportToExcel = async (device) => {
     const addRow = (label, customer = '', value, compareValue = '') => {
       const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
       row.font = { size: 11 };
-      row.border = {
+      row.border(4,1,4) = {
       top: {style: "thin"},
       bottom: {style: "thin"},
       left: {style: "thin"},
@@ -110,6 +111,12 @@ const exportToExcel = async (device) => {
       const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
       intRow.font = { size: 11 };
       intRow.height = 50;
+      intRow.border(4,1,4) = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
       intRow.getCell(1).alignment = {vertical: 'middle'};
       intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
       intRow.getCell(2).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
