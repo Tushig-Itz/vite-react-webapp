@@ -274,7 +274,34 @@ function App() {
               {selectedDevice.vendor} {selectedDevice.family} - {selectedDevice.series} Series
             </p>
           </div>
-
+          <button
+                onClick={() => exportToExcel(selectedDevice)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
+                }}
+              >
+                <Download size={18} />
+                Export to Excel
+              </button>
           <div className="spec-grid">
             {/* Firewall Throughput */}
             <SpecCard icon={Zap} title="Firewall Throughput">

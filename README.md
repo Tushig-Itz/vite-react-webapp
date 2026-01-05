@@ -1,4 +1,3 @@
 # FortiGate Specs Lookup
-V1 - **DEMO Fortigate specs lookup with searchbar
+V1 - **DEMO Fortigate specs lookup with searchbar and export option
    - wip: complete database, manual checks
-V2 - PLAN: Some sorting/comparization tools from manual spec entry
