@@ -154,9 +154,7 @@ function App() {
   if (device.release_year || device.support_years || device.datasheet_date || device.datasheet_url) {
     addSection('Product Information', [
       ['Release Year', device.release_year],
-      ['Support Period', device.support_years ? `${device.support_years} years` : null],
-      ['Datasheet Date', device.datasheet_date],
-      ['Datasheet URL', HYPERLINK(device.datasheet_url)]
+      ['Support Period', device.support_years ? `${device.support_years} years` : null]
     ].filter(row => row[1]));
   }
 
