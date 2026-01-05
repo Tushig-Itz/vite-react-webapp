@@ -64,6 +64,10 @@ function App() {
 
   const titleRow = worksheet.addRow(['FortiGate Specification Sheet']);
   titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
+  titleRow.alignment = {
+    horizontal: 'center',
+    vertical: 'middle'
+  }
   
   worksheet.mergeCells('A1:B1');
   
@@ -72,24 +76,23 @@ function App() {
   const addSection = (title, rows) => {
     const sectionRow = worksheet.addRow([title]);
     sectionRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
-    sectionRow.alignment = {
-      horizontal: 'center',
-      vertical: 'middle'
-    }
     sectionRow.fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FFF3F4F6' }
     };
     
-    rows.forEach(([label, value, unit]) => {
+    rows.forEach(([label, value]) => {
       const row = worksheet.addRow([
         label, 
-        value || value === 0 ? value : 'N/A', 
-        unit || ''
+        value || value === 0 ? value : 'N/A'
       ]);
       row.font = { size: 11 };
       row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+      row.getCell(2).alignment = {
+        horizontal: 'center',
+        vertical: 'middle'
+      }
     });
     
     worksheet.addRow([]);
