@@ -20,7 +20,7 @@ function App() {
       setFilteredDevices(devices);
     } else {
       const term = searchTerm.toLowerCase();
-      const filtered = devices.filter(device => 
+      const filtered = devices.filter(device =>
         device.model.toLowerCase().includes(term) ||
         device.model_norm.toLowerCase().includes(term) ||
         (device.series && device.series.toLowerCase().includes(term))
@@ -35,7 +35,7 @@ function App() {
     try {
       const response = await fetch('/api/devices');
       if (!response.ok) throw new Error('Failed to fetch');
-      
+
       const data = await response.json();
       setDevices(data.devices || []);
       setFilteredDevices(data.devices || []);
@@ -53,207 +53,192 @@ function App() {
     return num.toLocaleString();
   };
 
-const exportToExcel = async (device) => {
-  try {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(device.model);
+  const exportToExcel = async (device) => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(device.model);
 
-    // Set column widths
-    worksheet.columns = [
-      { width: 35 }, // Spec description
-      { width: 25 }, // Customer value
-      { width: 25 }, // Device value
-      { width: 20 }  // Comparison value
-    ];
+      // Set column widths
+      worksheet.columns = [
+        { width: 35 }, // Spec description
+        { width: 25 }, // Customer value
+        { width: 25 }, // Device value
+        { width: 20 }  // Comparison value
+      ];
 
-    // Title row
-    const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
-    titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
-    titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
-    worksheet.mergeCells('A1:D1');
-    
-    worksheet.addRow([]); // Empty row
+      // Title row
+      const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
+      titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
+      titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.mergeCells('A1:D1');
 
-    // Header row
-    const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн үзүүлэлт', device.model, 'Харьцуулалт']);
-    headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
-    headerRow.fill(4, 1, 4) = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF3B82F6' }
-    };
-    headerRow.getCell(1).border = {
-      top: {style: "thin"},
-      bottom: {style: "thick"},
-      left: {style: "thin"},
-      right: {style: "thin"},
-    };
-    headerRow.getCell(2).border = {
-      top: {style: "thin"},
-      bottom: {style: "thick"},
-      left: {style: "thin"},
-      right: {style: "thin"},
-    };
-    headerRow.getCell(3).border = {
-      top: {style: "thin"},
-      bottom: {style: "thick"},
-      left: {style: "thin"},
-      right: {style: "thin"},
-    };
-    headerRow.getCell(4).border = {
-      top: {style: "thin"},
-      bottom: {style: "thick"},
-      left: {style: "thin"},
-      right: {style: "thin"},
-    };
-    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+      worksheet.addRow([]); // Empty row
 
-    // Helper function to add rows
-    const addRow = (label, customer = '', value, compareValue = '') => {
-      const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
-      row.font = { size: 11 };
-      row.getCell(1).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
+      // Header row
+      const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн үзүүлэлт', device.model, 'Харьцуулалт']);
+      headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill(1, 4) = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF3B82F6' }
       };
-      row.getCell(2).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
+      headerRow.getCell('1:4').border = {
+        top: { style: "thin" },
+        bottom: { style: "thick" },
+        left: { style: "thin" },
+        right: { style: "thin" },
       };
-      row.getCell(3).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
+      headerRow.getCell(2).border = {
+        top: { style: "thin" },
+        bottom: { style: "thick" },
+        left: { style: "thin" },
+        right: { style: "thin" },
       };
-      row.getCell(4).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
+      headerRow.getCell(3).border = {
+        top: { style: "thin" },
+        bottom: { style: "thick" },
+        left: { style: "thin" },
+        right: { style: "thin" },
       };
-      row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-      row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
-    };
+      headerRow.getCell(4).border = {
+        top: { style: "thin" },
+        bottom: { style: "thick" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // Interface
-    if (device.interface_raw) {
-      const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
-      intRow.font = { size: 11 };
-      intRow.height = 50;
-      intRow.getCell(1).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
+      // Helper function to add rows
+      const addRow = (label, customer = '', value, compareValue = '') => {
+        const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
+        row.font = { size: 11 };
+        ['A4:D4'].map(key => {
+          row.getCell(key).border = {
+            top: { style: "thin" },
+            bottom: { style: "thin" },
+            left: { style: "thin" },
+            right: { style: "thin" },
+          };
+        })
+
+        row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+        row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
+        row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
       };
-      intRow.getCell(2).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
-      };
-      intRow.getCell(3).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
-      };
-      intRow.getCell(4).border = {
-      top: {style: "thin"},
-      bottom: {style: "thin"},
-      left: {style: "thin"},
-      right: {style: "thin"},
-      };
-      intRow.getCell(1).alignment = {vertical: 'middle'};
-      intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-      intRow.getCell(2).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+
+      // Interface
+      if (device.interface_raw) {
+        const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
+        intRow.font = { size: 11 };
+        intRow.height = 50;
+        intRow.getCell(1).border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        intRow.getCell(2).border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        intRow.getCell(3).border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        intRow.getCell(4).border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        intRow.getCell(1).alignment = { vertical: 'middle' };
+        intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+        intRow.getCell(2).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+      }
+
+      // Performance specs
+      addRow('Firewall Throughput', '',
+        device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A'
+      );
+
+      addRow('NGFW Throughput', '',
+        device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A'
+      );
+
+      addRow('Threat Protection Throughput', '',
+        device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A'
+      );
+
+      addRow('Concurrent Sessions (TCP)', '',
+        formatNumber(device.concurrent_sessions)
+      );
+
+      addRow('New Session/Second (TCP)', '',
+        formatNumber(device.new_sessions_per_sec)
+      );
+
+      addRow('IPS Throughput', '',
+        device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A'
+      );
+
+      addRow('AV Throughput', '',
+        device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A'
+      );
+
+      addRow('IPsec VPN Throughput', '',
+        device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A'
+      );
+
+      addRow('SSL Proxy Throughput', '',
+        device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A'
+      );
+
+      addRow('Virtual Systems (Default/Max)', '',
+        `${device.virtual_systems_max || 0}`
+      );
+
+      addRow('SSL VPN Users (Default/Max)', '',
+        device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A'
+      );
+
+      addRow('Gateway-to-Gateway VPN', '',
+        device.gateway_to_gateway_vpn || 'N/A'
+      );
+
+      addRow('Firewall Policy', '',
+        formatNumber(device.firewall_policy_max)
+      );
+
+      if (device.release_year) {
+        addRow('Release Year', '', device.release_year);
+      }
+
+      if (device.support_years) {
+        addRow('Support Years', '', `${device.support_years} years`);
+      }
+
+      // Generate and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      link.download = `FortiGate_${device.model}_${timestamp}.xlsx`;
+
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Export error:', error);
+      alert(`Export failed: ${error.message}`);
     }
-
-    // Performance specs
-    addRow('Firewall Throughput', '',
-      device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A'
-    );
-
-    addRow('NGFW Throughput', '',
-      device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A'
-    );
-
-    addRow('Threat Protection Throughput', '',
-      device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A'
-    );
-
-    addRow('Concurrent Sessions (TCP)', '',
-      formatNumber(device.concurrent_sessions)
-    );
-
-    addRow('New Session/Second (TCP)', '',
-      formatNumber(device.new_sessions_per_sec)
-    );
-
-    addRow('IPS Throughput', '',
-      device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A'
-    );
-
-    addRow('AV Throughput', '',
-      device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A'
-    );
-
-    addRow('IPsec VPN Throughput', '',
-      device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A'
-    );
-
-    addRow('SSL Proxy Throughput', '',
-      device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A'
-    );
-
-    addRow('Virtual Systems (Default/Max)', '',
-      `${device.virtual_systems_max || 0}`
-    );
-
-    addRow('SSL VPN Users (Default/Max)', '',
-      device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A'
-    );
-
-    addRow('Gateway-to-Gateway VPN', '',
-      device.gateway_to_gateway_vpn || 'N/A'
-    );
-
-    addRow('Firewall Policy', '',
-      formatNumber(device.firewall_policy_max)
-    );
-
-    if (device.release_year) {
-      addRow('Release Year', '', device.release_year);
-    }
-
-    if (device.support_years) {
-      addRow('Support Years', '', `${device.support_years} years`);
-    }
-
-    // Generate and download
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    
-    const timestamp = new Date().toISOString().split('T')[0];
-    link.download = `FortiGate_${device.model}_${timestamp}.xlsx`;
-    
-    link.click();
-    window.URL.revokeObjectURL(url);
-    
-  } catch (error) {
-    console.error('Export error:', error);
-    alert(`Export failed: ${error.message}`);
-  }
-};
+  };
 
   const SpecCard = ({ icon: Icon, title, children }) => (
     <div className="spec-card">
@@ -361,33 +346,33 @@ const exportToExcel = async (device) => {
             </p>
           </div>
           <button
-                onClick={() => exportToExcel(selectedDevice)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1.5rem',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
-                }}
-              >
-                <Download size={18} />
-                Export to Excel
-              </button>
+            onClick={() => exportToExcel(selectedDevice)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              fontWeight: '500',
+              transition: 'all 0.2s',
+              boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
+            }}
+          >
+            <Download size={18} />
+            Export to Excel
+          </button>
           <div className="spec-grid">
             {/* Firewall Throughput */}
             <SpecCard icon={Zap} title="Firewall Throughput">
@@ -485,9 +470,9 @@ const exportToExcel = async (device) => {
                   <div className="spec-row">
                     <span className="spec-label">Datasheet</span>
                     <span className="spec-value">
-                      <a 
-                        href={selectedDevice.datasheet_url} 
-                        target="_blank" 
+                      <a
+                        href={selectedDevice.datasheet_url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: '#60a5fa', textDecoration: 'none' }}
                         onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
