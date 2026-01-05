@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, Network, Zap, Shield, Users, Wifi, HardDrive } from 'lucide-react';
+import { Search, Network, Zap, Shield, Users, Wifi, HardDrive, Download } from 'lucide-react';
 import './App.css';
+import ExcelJS from 'exceljs';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,6 +53,122 @@ function App() {
     return num.toLocaleString();
   };
 
+  const exportToExcel = async (device) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(device.model);
+
+  worksheet.columns = [
+    { width: 35 },
+    { width: 20 },
+  ];
+
+  const titleRow = worksheet.addRow(['FortiGate Specification Sheet']);
+  titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
+  worksheet.mergeCells('A1:B1');
+  
+  worksheet.addRow([]);
+
+  const addSection = (title, rows) => {
+    const sectionRow = worksheet.addRow([title]);
+    sectionRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
+    sectionRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFF3F4F6' }
+    };
+    
+    rows.forEach(([label, value, unit]) => {
+      const row = worksheet.addRow([
+        label, 
+        value || value === 0 ? value : 'N/A', 
+        unit || ''
+      ]);
+      row.font = { size: 11 };
+      row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+    });
+    
+    worksheet.addRow([]);
+  };
+
+  addSection('Model Information', [
+    ['Family', device.family],
+    ['Model', device.model],
+  ]);
+  addSection('Firewall Throughput', [
+    ['1518 byte packets', `${device.firewall_throughput_1518_gbps} Gbps`],
+    ['512 byte packets', `${device.firewall_throughput_512_gbps} Gbps`],
+    ['64 byte packets', `${device.firewall_throughput_64_gbps} Gbps`]
+  ]);
+  addSection('Security Performance', [
+    ['IPS Throughput', `${device.ips_throughput_gbps} Gbps`],
+    ['NGFW Throughput', `${device.ngfw_throughput_gbps} Gbps`],
+    ['Threat Protection', `${device.threat_protection_gbps} Gbps`],
+    ['AV Throughput', `${device.av_throughput_gbps} Gbps`],
+    ['SSL Proxy', `${device.ssl_proxy_throughput_gbps} Gbps`]
+  ]);
+  addSection('VPN Performance', [
+    ['IPsec VPN', `${device.ipsec_vpn_throughput_gbps} Gbps`],
+    ['Gateway-to-Gateway VPN', `${device.gateway_to_gateway_vpn} tunnels`],
+    ['SSL VPN Users (Max)', `${device.ssl_vpn_users_max} users`]
+  ]);
+  addSection('Sessions & Capacity', [
+    ['Concurrent Sessions', formatNumber(device.concurrent_sessions)],
+    ['New Sessions/sec', formatNumber(device.new_sessions_per_sec)],
+    ['Firewall Policies (Max)', formatNumber(device.firewall_policy_max)]
+  ]);
+  addSection('Virtualization', [
+    ['Virtual Systems (Default)', device.virtual_systems_default],
+    ['Virtual Systems (Max)', device.virtual_systems_max]
+  ]);
+  addSection('Interfaces', [
+    ['GE RJ45 Ports', device.ge_rj45_ports],
+    ['GE SFP Ports', device.ge_sfp_ports],
+    ['10GE SFP+ Ports', device.ten_ge_sfp_ports],
+    ['FortiLink Ports', device.fortilink_ports],
+    ['FortiLink Slots', device.fortilink_slots],
+    ['Management Ports', device.mgmt_ports],
+    ['WAN Ports', device.wan_ports],
+    ['HA Ports', device.ha_ports]
+  ]);
+  if (device.interface_raw) {
+    const detailsRow = worksheet.addRow(['Interface Details']);
+    detailsRow.font = { size: 12, bold: true, color: { argb: 'FF3B82F6' } };
+    detailsRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFF3F4F6' }
+    };
+    
+    const ifaceRow = worksheet.addRow([device.interface_raw]);
+    worksheet.mergeCells(`A${ifaceRow.number}:C${ifaceRow.number}`);
+    ifaceRow.font = { size: 11 };
+    ifaceRow.alignment = { wrapText: true };
+    
+    worksheet.addRow([]);
+  }
+  if (device.release_year || device.support_years || device.datasheet_date || device.datasheet_url) {
+    addSection('Product Information', [
+      ['Release Year', device.release_year],
+      ['Support Period', device.support_years ? `${device.support_years} years` : null],
+      ['Datasheet Date', device.datasheet_date],
+      ['Datasheet URL', device.datasheet_url]
+    ].filter(row => row[1]));
+  }
+
+  // Generate and download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  
+  const timestamp = new Date().toISOString().split('T')[0];
+  link.download = `FortiGate_${device.model}_${timestamp}.xlsx`;
+  
+  link.click();
+  window.URL.revokeObjectURL(url);
+};
+
   const SpecCard = ({ icon: Icon, title, children }) => (
     <div className="spec-card">
       <div className="spec-card-header">
@@ -100,13 +217,13 @@ function App() {
 
   return (
     <div>
-      {/* Header */}
+      {/* header */}
       <div className="header">
         <h1>FortiGate Specs Lookup</h1>
         <p>Quick reference for FortiGate firewall specifications</p>
       </div>
 
-      {/* Search Bar */}
+      {/* search */}
       <div className="search-container">
         <Search className="search-icon" size={20} />
         <input
@@ -118,7 +235,7 @@ function App() {
         />
       </div>
 
-      {/* Results List */}
+      {/* results */}
       {filteredDevices.length > 0 ? (
         <div className="device-grid">
           {filteredDevices.map((device) => (
@@ -148,7 +265,7 @@ function App() {
         </div>
       )}
 
-      {/* Device Details */}
+      {/* device details */}
       {selectedDevice && (
         <div className="spec-details fade-in">
           <div className="spec-header">
@@ -221,7 +338,7 @@ function App() {
             </div>
           )}
 
-          {/* Source & Metadata - NEW SECTION */}
+          {/* Source & Metadata */}
           {(selectedDevice.release_year || selectedDevice.support_years || selectedDevice.datasheet_url || selectedDevice.datasheet_date) && (
             <div className="spec-card" style={{ marginTop: '1.5rem' }}>
               <div className="spec-card-header">

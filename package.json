@@ -9,15 +9,30 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@e965/xlsx": "^0.20.3",
+    "better-sqlite3": "^11.7.0",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.263.1",
-    "better-sqlite3": "^11.7.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react": "^4.2.1",
     "vite": "^5.0.8"
-  }
+  },
+  "description": "V1 - **DEMO Fortigate specs lookup with searchbar    - wip: complete database, manual checks V2 - PLAN: Some sorting/comparization tools from manual spec entry",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tushig-Itz/vite-react.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tushig-Itz/vite-react/issues"
+  },
+  "homepage": "https://github.com/Tushig-Itz/vite-react#readme"
 }

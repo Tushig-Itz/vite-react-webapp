@@ -71,7 +71,6 @@ body {
   color: #9ca3af;
 }
 
-/* Device Grid - Single Row Scrollable */
 .device-grid {
   display: flex;
   gap: 1rem;
@@ -81,7 +80,6 @@ body {
   padding-bottom: 1rem;
   scroll-behavior: smooth;
   
-  /* Hide scrollbar but keep functionality */
   scrollbar-width: thin;
   scrollbar-color: #4b5563 #1f2937;
 }
