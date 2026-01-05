@@ -74,19 +74,32 @@ const exportToExcel = async (device) => {
     worksheet.addRow([]); // Empty row
 
     // Header row
-    const headerRow = worksheet.addRow(['Spec Description', device.model, 'Value of Compare']);
+    const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн үзүүлэлт', device.model, 'Харьцуулалт']);
     headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
     headerRow.fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FF3B82F6' }
     };
+    headerRow.border = {
+      top: {style: "thin"},
+      bottom: {style: "thick"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+
+    };
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
     // Helper function to add rows
-    const addRow = (label, value, compareValue = '') => {
-      const row = worksheet.addRow([label, value || 'N/A', compareValue]);
+    const addRow = (label, customer = '', value, compareValue = '') => {
+      const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
       row.font = { size: 11 };
+      row.border = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
       row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
       row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -94,7 +107,7 @@ const exportToExcel = async (device) => {
 
     // Interface
     if (device.interface_raw) {
-      const intRow = worksheet.addRow(['Interface', device.interface_raw, '']);
+      const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
       intRow.font = { size: 11 };
       intRow.height = 50;
       intRow.getCell(1).alignment = {vertical: 'middle'};
@@ -103,64 +116,64 @@ const exportToExcel = async (device) => {
     }
 
     // Performance specs
-    addRow('Firewall Throughput', 
+    addRow('Firewall Throughput', '',
       device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A'
     );
 
-    addRow('NGFW Throughput', 
+    addRow('NGFW Throughput', '',
       device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A'
     );
 
-    addRow('Threat Protection Throughput', 
+    addRow('Threat Protection Throughput', '',
       device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A'
     );
 
-    addRow('Concurrent Sessions (TCP)', 
+    addRow('Concurrent Sessions (TCP)', '',
       formatNumber(device.concurrent_sessions)
     );
 
-    addRow('New Session/Second (TCP)', 
+    addRow('New Session/Second (TCP)', '',
       formatNumber(device.new_sessions_per_sec)
     );
 
-    addRow('IPS Throughput', 
+    addRow('IPS Throughput', '',
       device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A'
     );
 
-    addRow('AV Throughput', 
+    addRow('AV Throughput', '',
       device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A'
     );
 
-    addRow('IPsec VPN Throughput', 
+    addRow('IPsec VPN Throughput', '',
       device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A'
     );
 
-    addRow('SSL Proxy Throughput', 
+    addRow('SSL Proxy Throughput', '',
       device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A'
     );
 
-    addRow('Virtual Systems (Default/Max)', 
+    addRow('Virtual Systems (Default/Max)', '',
       `${device.virtual_systems_max || 0}`
     );
 
-    addRow('SSL VPN Users (Default/Max)', 
+    addRow('SSL VPN Users (Default/Max)', '',
       device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A'
     );
 
-    addRow('Gateway-to-Gateway VPN', 
+    addRow('Gateway-to-Gateway VPN', '',
       device.gateway_to_gateway_vpn || 'N/A'
     );
 
-    addRow('Firewall Policy', 
+    addRow('Firewall Policy', '',
       formatNumber(device.firewall_policy_max)
     );
 
     if (device.release_year) {
-      addRow('Release Year', device.release_year);
+      addRow('Release Year', '', device.release_year);
     }
 
     if (device.support_years) {
-      addRow('Support Years', `${device.support_years} years`);
+      addRow('Support Years', '', `${device.support_years} years`);
     }
 
     // Generate and download
