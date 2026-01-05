@@ -82,12 +82,29 @@ const exportToExcel = async (device) => {
       pattern: 'solid',
       fgColor: { argb: 'FF3B82F6' }
     };
-    headerRow.border(4, 1, 4) = {
+    headerRow.getCell(1).border = {
       top: {style: "thin"},
       bottom: {style: "thick"},
       left: {style: "thin"},
       right: {style: "thin"},
-
+    };
+    headerRow.getCell(2).border = {
+      top: {style: "thin"},
+      bottom: {style: "thick"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+    };
+    headerRow.getCell(3).border = {
+      top: {style: "thin"},
+      bottom: {style: "thick"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+    };
+    headerRow.getCell(4).border = {
+      top: {style: "thin"},
+      bottom: {style: "thick"},
+      left: {style: "thin"},
+      right: {style: "thin"},
     };
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -95,7 +112,25 @@ const exportToExcel = async (device) => {
     const addRow = (label, customer = '', value, compareValue = '') => {
       const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
       row.font = { size: 11 };
-      row.border(4,1,4) = {
+      row.getCell(1).border = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
+      row.getCell(2).border = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
+      row.getCell(3).border = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
+      row.getCell(4).border = {
       top: {style: "thin"},
       bottom: {style: "thin"},
       left: {style: "thin"},
@@ -111,7 +146,25 @@ const exportToExcel = async (device) => {
       const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
       intRow.font = { size: 11 };
       intRow.height = 50;
-      intRow.border(4,1,4) = {
+      intRow.getCell(1).border = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
+      intRow.getCell(2).border = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
+      intRow.getCell(3).border = {
+      top: {style: "thin"},
+      bottom: {style: "thin"},
+      left: {style: "thin"},
+      right: {style: "thin"},
+      };
+      intRow.getCell(4).border = {
       top: {style: "thin"},
       bottom: {style: "thin"},
       left: {style: "thin"},
