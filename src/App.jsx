@@ -95,10 +95,11 @@ const exportToExcel = async (device) => {
     // Interface
     if (device.interface_raw) {
       const intRow = worksheet.addRow(['Interface', device.interface_raw, '']);
-      worksheet.mergeCells(`B${intRow.number}:C${intRow.number}`);
       intRow.font = { size: 11 };
+      intRow.dimensions = {height: 50};
+      intRow.getCell(1).alignment = {vertical: 'middle'};
       intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-      intRow.getCell(2).alignment = { wrapText: true, vertical: 'top' };
+      intRow.getCell(2).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
     }
 
     // Performance specs
@@ -139,11 +140,11 @@ const exportToExcel = async (device) => {
     );
 
     addRow('Virtual Systems (Default/Max)', 
-      `${device.virtual_systems_default || 0}/${device.virtual_systems_max || 0}`
+      `${device.virtual_systems_max || 0}`
     );
 
     addRow('SSL VPN Users (Default/Max)', 
-      device.ssl_vpn_users_max ? `${device.ssl_vpn_users_default || 0}/${device.ssl_vpn_users_max}` : 'N/A'
+      device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A'
     );
 
     addRow('Gateway-to-Gateway VPN', 
