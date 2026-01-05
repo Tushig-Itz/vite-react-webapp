@@ -91,7 +91,7 @@ const exportToExcel = async (device) => {
   };
   headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
-  const addRow = (label, value, compareValue = '', color = null) => {
+  const addRow = (label, value, compareValue = '') => {
     const row = worksheet.addRow([label, value || 'N/A', compareValue]);
     row.font = { size: 11 };
     row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
