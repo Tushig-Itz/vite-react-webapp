@@ -1,4 +1,4 @@
-import { DeviceCard } from './DeviceCard';
+import { DeviceCard } from './deviceCard';
 
 export const DeviceGrid = ({ devices, selectedDevice, onSelectDevice }) => {
   return (
