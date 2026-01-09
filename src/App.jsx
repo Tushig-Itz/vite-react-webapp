@@ -94,11 +94,11 @@ function App() {
     }
 
     // addrows
-    const addRow = (label, customer = '', value, compareValue) => {
+    const addRow = (label, customer = '', value, compareValue = '') => {
       const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
       row.font = { size: 11 };
       
-      // Apply borders to all cells in the row
+      // borders
       for (let i = 1; i <= 4; i++) {
         row.getCell(i).border = {
           top: { style: 'thin' },
@@ -108,10 +108,8 @@ function App() {
         };
       }
       
-      // Style first column (label)
+      // column styles
       row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-      
-      // Center align value columns
       row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -136,7 +134,8 @@ function App() {
 
     addRow('Firewall Throughput', '', 
       device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A', 
-      compareValue.value = { formula: 'IF(VALUE(LEFT(C5,FIND(" ",C5&" ")-1)) > VALUE(LEFT(B5,FIND(" ",B5&" ")-1)), "More", "Less")'}
+      compareValue.value = { formula: 
+        '=IF(ISBLANK(B4),"N/A",IF(VALUE(LEFT(C4,FIND(" ",C4&" ")-1))>VALUE(LEFT(B4,FIND(" ",B4&" ")-1)),"More",IF(VALUE(LEFT(C4,FIND(" ",C4&" ")-1))=VALUE(LEFT(B4,FIND(" ",B4&" ")-1)),"Same","Less")))'}
     );
 
     addRow('NGFW Throughput', '', 
