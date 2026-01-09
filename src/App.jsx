@@ -128,6 +128,7 @@ function App() {
             <div className="spec-card">
               <div className="spec-card-header">
                 <Zap size={20} />
+                <h3>Firewall Performance</h3>
               </div>
               <div>
                 <div className="spec-row">
@@ -262,6 +263,57 @@ function App() {
               <p style={{ color: '#9ca3af', fontSize: '0.875rem', lineHeight: '1.6' }}>
                 {selectedDevice.interface_raw}
               </p>
+            </div>
+          )}
+
+          {/* Product Information */}
+          {(selectedDevice.release_year || selectedDevice.support_years || selectedDevice.datasheet_date || selectedDevice.datasheet_url) && (
+            <div className="spec-card" style={{ marginTop: '1.5rem' }}>
+              <div className="spec-card-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <h3>Product Information</h3>
+              </div>
+              <div>
+                {selectedDevice.release_year && (
+                  <div className="spec-row">
+                    <span className="spec-label">Release Year</span>
+                    <span className="spec-value">{selectedDevice.release_year}</span>
+                  </div>
+                )}
+                {selectedDevice.support_years && (
+                  <div className="spec-row">
+                    <span className="spec-label">Support Period</span>
+                    <span className="spec-value">{selectedDevice.support_years} <span className="unit">years</span></span>
+                  </div>
+                )}
+                {selectedDevice.datasheet_date && (
+                  <div className="spec-row">
+                    <span className="spec-label">Datasheet Date</span>
+                    <span className="spec-value">{selectedDevice.datasheet_date}</span>
+                  </div>
+                )}
+                {selectedDevice.datasheet_url && (
+                  <div className="spec-row">
+                    <span className="spec-label">Datasheet</span>
+                    <span className="spec-value">
+                      <a 
+                        href={selectedDevice.datasheet_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ color: '#60a5fa', textDecoration: 'none' }}
+                        onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
+                        onMouseOut={(e) => e.target.style.textDecoration = 'none'}
+                      >
+                        View PDF
+                      </a>
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
