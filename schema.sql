@@ -14,8 +14,6 @@ CREATE TABLE IF NOT EXISTS devices (
     firewall_throughput_1518_gbps REAL,
     firewall_throughput_512_gbps  REAL,
     firewall_throughput_64_gbps   REAL,
-
-    -- Performance (Gbps)
     ips_throughput_gbps REAL,
     ngfw_throughput_gbps REAL,
     threat_protection_gbps REAL,
@@ -23,24 +21,19 @@ CREATE TABLE IF NOT EXISTS devices (
     ipsec_vpn_throughput_gbps REAL,
     ssl_proxy_throughput_gbps REAL,
 
-    -- Sessions / rate
     concurrent_sessions INTEGER,
     new_sessions_per_sec INTEGER,
-
-    -- Virtualization / users
     virtual_systems_default INTEGER,
     virtual_systems_max INTEGER,
     ssl_vpn_users_default INTEGER,
     ssl_vpn_users_max INTEGER,
-
-    -- Scale limits
     gateway_to_gateway_vpn INTEGER,
     firewall_policy_max INTEGER,
 
-    -- Interfaces (counts)
+    -- Interfaces
     ge_rj45_ports INTEGER,
-    ge_sfp_ports INTEGER,        -- 1GE SFP
-    ten_ge_sfp_ports INTEGER,    -- 10GE SFP/SFP+
+    ge_sfp_ports INTEGER,
+    ten_ge_sfp_ports INTEGER,
     fortilink_ports INTEGER,
     fortilink_slots INTEGER,
     mgmt_ports INTEGER,
@@ -52,8 +45,6 @@ CREATE TABLE IF NOT EXISTS devices (
     -- Lifecycle
     release_year INTEGER,
     support_years INTEGER,
-
-    -- Source tracking
     datasheet_url TEXT,
     datasheet_date TEXT
 );

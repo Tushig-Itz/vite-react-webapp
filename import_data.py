@@ -15,13 +15,14 @@ print("Cleared existing data")
 
 with open('fortigate_specs.sql', 'r') as f:
     reader = csv.reader(f)
-    headers = next(reader)  #skip header
+    headers = next(reader)  # skip header
     
-    for row_num, row in enumerate(reader, start=2):  #header space
+    for row_num, row in enumerate(reader, start=2):
         if not row or not row[0]:
             continue
         
-        while len(row) < 34:
+        # Pad to 36 columns (was 34, added dmz_ports and model_norm)
+        while len(row) < 36:
             row.append('')
         
         values = []
@@ -50,18 +51,20 @@ with open('fortigate_specs.sql', 'r') as f:
                     interface_raw, release_year, support_years, datasheet_url, datasheet_date
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                values[0], values[1], model, model_norm, values[3], values[4], values[5], values[6], 
-                values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14],
-                values[15], values[16], values[17], values[18], values[19], values[20], values[21], values[22],
-                values[23], values[24], values[25], values[26], values[27], values[28], values[29], values[30],
-                values[31], values[32], values[33], values[34]
-
+                values[0], values[1], model, model_norm, values[3],
+                values[4], values[5], values[6], values[7], values[8],
+                values[9], values[10], values[11], values[12], values[13],
+                values[14], values[15], values[16], values[17], values[18],
+                values[19], values[20], values[21], values[22], values[23],
+                values[24], values[25], values[26], values[27], values[28],
+                values[29], values[30], values[31], values[32], values[33],
+                values[34]
             ))
             
             print(f"Inserted: {model} (searchable as: {model_norm})")
         except Exception as e:
             print(f"ERROR on row {row_num} (model: {model}): {e}")
-            print(f"Row has {len(row)} columns, values: {row[:5]}...")  #first 5 for accuracy
+            print(f"Row has {len(row)} columns")
 
 conn.commit()
 conn.close()
