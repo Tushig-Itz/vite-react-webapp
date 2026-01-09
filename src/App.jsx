@@ -94,8 +94,9 @@ function App() {
     }
 
     // addrows
-    const addRow = (label, customer = '', value, compareValue = '') => {
-      const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
+    const addRow = (label, customer = '', value, useFormula = false) => {
+      const row = worksheet.addRow([label, customer, value || 'N/A', '']);
+      const rowNum = row.number;
       row.font = { size: 11 };
       
       // borders
@@ -113,6 +114,11 @@ function App() {
       row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+      if (useFormula) {
+       row.getCell(4).value = { 
+        formula: `=IF(ISBLANK(B${rowNum}),"N/A",IF(VALUE(LEFT(C${rowNum},FIND(" ",C${rowNum}&" ")-1))>VALUE(LEFT(B${rowNum},FIND(" ",B${rowNum}&" ")-1)),"More",IF(VALUE(LEFT(C${rowNum},FIND(" ",C${rowNum}&" ")-1))=VALUE(LEFT(B${rowNum},FIND(" ",B${rowNum}&" ")-1)),"Same","Less")))`
+       };
+      }
     };
 
     // Interface row
@@ -133,57 +139,54 @@ function App() {
     }
 
     addRow('Firewall Throughput', '', 
-      device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A', 
-      compareValue.value = { formula: 
-        '=IF(ISBLANK(B4),"N/A",IF(VALUE(LEFT(C4,FIND(" ",C4&" ")-1))>VALUE(LEFT(B4,FIND(" ",B4&" ")-1)),"More",IF(VALUE(LEFT(C4,FIND(" ",C4&" ")-1))=VALUE(LEFT(B4,FIND(" ",B4&" ")-1)),"Same","Less")))'}
-    );
+      device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A', true);
 
     addRow('NGFW Throughput', '', 
-      device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A'
+      device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A', true
     );
 
     addRow('Threat Protection Throughput', '', 
-      device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A'
+      device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A', true
     );
 
     addRow('Concurrent Sessions (TCP)', '', 
-      formatNumber(device.concurrent_sessions)
+      formatNumber(device.concurrent_sessions), true
     );
 
     addRow('New Session/Second (TCP)', '', 
-      formatNumber(device.new_sessions_per_sec)
+      formatNumber(device.new_sessions_per_sec), true
     );
 
     addRow('IPS Throughput', '', 
-      device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A'
+      device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A', true
     );
 
     addRow('AV Throughput', '', 
-      device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A'
+      device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A', true
     );
 
     addRow('IPsec VPN Throughput', '', 
-      device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A'
+      device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A', true
     );
 
     addRow('SSL Proxy Throughput', '', 
-      device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A'
+      device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A', true
     );
 
     addRow('Virtual Systems (Max)', '', 
-      `${device.virtual_systems_max || 0}`
+      `${device.virtual_systems_max || 0}`, true
     );
 
     addRow('SSL VPN Users (Max)', '', 
-      device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A'
+      device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A', true
     );
 
     addRow('Gateway-to-Gateway VPN', '', 
-      device.gateway_to_gateway_vpn || 'N/A'
+      device.gateway_to_gateway_vpn || 'N/A', true
     );
 
     addRow('Firewall Policy', '', 
-      formatNumber(device.firewall_policy_max)
+      formatNumber(device.firewall_policy_max), true
     );
 
     // Product info
