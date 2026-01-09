@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Network, Zap, Shield, Users, Wifi, HardDrive, Download } from 'lucide-react';
 import './App.css';
-import ExcelJS from 'exceljs';
+import ExcelJS, { FormulaType } from 'exceljs';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,7 +79,6 @@ function App() {
     headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
     
-    // Apply fill and border to each header cell
     for (let i = 1; i <= 4; i++) {
       headerRow.getCell(i).fill = {
         type: 'pattern',
@@ -94,8 +93,8 @@ function App() {
       };
     }
 
-    // Helper function to add rows - MUST BE HERE
-    const addRow = (label, customer = '', value, compareValue = '') => {
+    // addrows
+    const addRow = (label, customer = '', value, compareValue) => {
       const row = worksheet.addRow([label, customer, value || 'N/A', compareValue]);
       row.font = { size: 11 };
       
@@ -121,7 +120,7 @@ function App() {
     // Interface row
     if (device.interface_raw) {
       const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
-      intRow.height = 50;
+      intRow.height = 60;
       intRow.getCell(1).alignment = {vertical: 'middle'};
       intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
       intRow.getCell(3).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
@@ -136,7 +135,8 @@ function App() {
     }
 
     addRow('Firewall Throughput', '', 
-      device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A'
+      device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A', 
+      compareValue.value = { formula: 'IF(VALUE(LEFT(C5,FIND(" ",C5&" ")-1)) > VALUE(LEFT(B5,FIND(" ",B5&" ")-1)), "More", "Less")'}
     );
 
     addRow('NGFW Throughput', '', 
