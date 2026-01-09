@@ -98,13 +98,177 @@ function App() {
                   {selectedDevice.vendor} {selectedDevice.family} - {selectedDevice.series} Series
                 </p>
               </div>
-              <button onClick={handleExport} style={{
-              }}>
+              <button
+                onClick={handleExport}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
+                }}
+              >
                 <Download size={18} />
                 Export to Excel
               </button>
             </div>
           </div>
+
+          <div className="spec-grid">
+            <div className="spec-card">
+              <div className="spec-card-header">
+                <Zap size={20} />
+              </div>
+              <div>
+                <div className="spec-row">
+                  <span className="spec-label">1518 byte packets</span>
+                  <span className="spec-value">{selectedDevice.firewall_throughput_1518_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">512 byte packets</span>
+                  <span className="spec-value">{selectedDevice.firewall_throughput_512_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">64 byte packets</span>
+                  <span className="spec-value">{selectedDevice.firewall_throughput_64_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+              </div>
+            </div>
+            <div className="spec-card">
+              <div className="spec-card-header">
+                <Shield size={20} />
+                <h3>Security Performance</h3>
+              </div>
+              <div>
+                <div className="spec-row">
+                  <span className="spec-label">IPS Throughput</span>
+                  <span className="spec-value">{selectedDevice.ips_throughput_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">NGFW Throughput</span>
+                  <span className="spec-value">{selectedDevice.ngfw_throughput_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">Threat Protection</span>
+                  <span className="spec-value">{selectedDevice.threat_protection_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">AV Throughput</span>
+                  <span className="spec-value">{selectedDevice.av_throughput_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+              </div>
+            </div>
+            <div className="spec-card">
+              <div className="spec-card-header">
+                <Wifi size={20} />
+                <h3>VPN Performance</h3>
+              </div>
+              <div>
+                <div className="spec-row">
+                  <span className="spec-label">IPsec VPN</span>
+                  <span className="spec-value">{selectedDevice.ipsec_vpn_throughput_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">Gateway-to-Gateway VPN</span>
+                  <span className="spec-value">{formatNumber(selectedDevice.gateway_to_gateway_vpn)} <span className="unit">tunnels</span></span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">SSL VPN Users (Max)</span>
+                  <span className="spec-value">{formatNumber(selectedDevice.ssl_vpn_users_max)} <span className="unit">users</span></span>
+                </div>
+              </div>
+            </div>
+            <div className="spec-card">
+              <div className="spec-card-header">
+                <HardDrive size={20} />
+                <h3>Sessions & Capacity</h3>
+              </div>
+              <div>
+                <div className="spec-row">
+                  <span className="spec-label">Concurrent Sessions</span>
+                  <span className="spec-value">{formatNumber(selectedDevice.concurrent_sessions)}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">New Sessions/sec</span>
+                  <span className="spec-value">{formatNumber(selectedDevice.new_sessions_per_sec)}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">Firewall Policies (Max)</span>
+                  <span className="spec-value">{formatNumber(selectedDevice.firewall_policy_max)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="spec-card">
+              <div className="spec-card-header">
+                <Users size={20} />
+                <h3>Virtualization</h3>
+              </div>
+              <div>
+                <div className="spec-row">
+                  <span className="spec-label">Virtual Systems (Default)</span>
+                  <span className="spec-value">{selectedDevice.virtual_systems_default || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">Virtual Systems (Max)</span>
+                  <span className="spec-value">{selectedDevice.virtual_systems_max || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="spec-card">
+              <div className="spec-card-header">
+                <Network size={20} />
+                <h3>Interfaces</h3>
+              </div>
+              <div>
+                <div className="spec-row">
+                  <span className="spec-label">GE RJ45 Ports</span>
+                  <span className="spec-value">{selectedDevice.ge_rj45_ports || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">GE SFP Ports</span>
+                  <span className="spec-value">{selectedDevice.ge_sfp_ports || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">10GE SFP+ Ports</span>
+                  <span className="spec-value">{selectedDevice.ten_ge_sfp_ports || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">WAN Ports</span>
+                  <span className="spec-value">{selectedDevice.wan_ports || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">DMZ Ports</span>
+                  <span className="spec-value">{selectedDevice.dmz_ports || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {selectedDevice.interface_raw && (
+            <div className="spec-card" style={{ marginTop: '1.5rem' }}>
+              <div className="spec-card-header">
+                <Network size={16} />
+                <h3>Interface Details</h3>
+              </div>
+              <p style={{ color: '#9ca3af', fontSize: '0.875rem', lineHeight: '1.6' }}>
+                {selectedDevice.interface_raw}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
