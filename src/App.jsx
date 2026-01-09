@@ -58,23 +58,22 @@ function App() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(device.model);
 
-    // Set column widths
+    // column widths
     worksheet.columns = [
-      { width: 35 }, // Spec description
+      { width: 30 }, // Spec description
       { width: 25 }, // Customer value
       { width: 25 }, // Device value
-      { width: 18 }  // Comparison value
+      { width: 15 }  // Comparison
     ];
 
-    // Title row
+    // title
     const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
     titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
     titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
     worksheet.mergeCells('A1:D1');
-    
-    worksheet.addRow([]); // Empty row
+    worksheet.addRow([]);
 
-    // Header row
+    // header 
     const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн үзүүлэлт', device.model, 'Харьцуулалт']);
     headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
     headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -98,6 +97,7 @@ function App() {
       const row = worksheet.addRow([label, customer, value || 'N/A', '']);
       const rowNum = row.number;
       row.font = { size: 11 };
+      row.height = 15
       
       // borders
       for (let i = 1; i <= 4; i++) {
@@ -115,9 +115,9 @@ function App() {
       row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
       row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
       if (useFormula) {
-       row.getCell(4).value = { 
-        formula: `=IF(ISBLANK(B${rowNum}),"N/A",IF(VALUE(LEFT(C${rowNum},FIND(" ",C${rowNum}&" ")-1))>VALUE(LEFT(B${rowNum},FIND(" ",B${rowNum}&" ")-1)),"More",IF(VALUE(LEFT(C${rowNum},FIND(" ",C${rowNum}&" ")-1))=VALUE(LEFT(B${rowNum},FIND(" ",B${rowNum}&" ")-1)),"Same","Less")))`
-       };
+        row.getCell(4).value = { 
+        formula: `=IF(OR(B${rowNum}="",ISBLANK(B${rowNum})),"",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)>IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"More",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)=IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"Same","Less")))`
+    };
       }
     };
 
