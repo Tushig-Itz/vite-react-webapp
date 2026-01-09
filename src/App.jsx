@@ -97,7 +97,7 @@ function App() {
       const row = worksheet.addRow([label, customer, value || 'N/A', '']);
       const rowNum = row.number;
       row.font = { size: 11 };
-      row.height = 15
+      row.height = 25
       
       // borders
       for (let i = 1; i <= 4; i++) {
