@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Zap, Shield, Wifi, HardDrive, Users, Network } from 'lucide-react';
 import { SearchBar } from './components/searchBar';
 import { DeviceGrid } from './components/deviceGrid';
 import { exportDeviceToExcel } from './utils/excelExport';
@@ -49,11 +49,6 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatNumber = (num) => {
-    if (!num && num !== 0) return 'N/A';
-    return num.toLocaleString();
   };
 
   const handleExport = async () => {
