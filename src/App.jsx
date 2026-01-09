@@ -396,6 +396,7 @@ function App() {
               <SpecRow label="FortiLink Slots" value={selectedDevice.fortilink_slots} />
               <SpecRow label="Management Ports" value={selectedDevice.mgmt_ports} />
               <SpecRow label="WAN Ports" value={selectedDevice.wan_ports} />
+              <SpecRow label="DMZ Ports" value={selectedDevice.dmz_ports} />
               <SpecRow label="HA Ports" value={selectedDevice.ha_ports} />
             </SpecCard>
           </div>

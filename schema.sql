@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS devices (
     mgmt_ports INTEGER,
     ha_ports INTEGER,
     wan_ports INTEGER,
+    dmz_ports INTEGER,
     interface_raw TEXT,
 
     -- Lifecycle
