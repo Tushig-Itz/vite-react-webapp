@@ -450,6 +450,10 @@ body {
   animation: slideUp 0.3s ease-out;
 }
 
+.modal-content.modal-large {
+  max-width: 1200px;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(20px);
@@ -542,6 +546,9 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
 /* RFP Field */
@@ -581,8 +588,11 @@ body {
 /* Model Selection Grid */
 .model-selection-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
 .model-selection-card {
@@ -600,12 +610,6 @@ body {
   background: rgba(31, 41, 55, 0.8);
 }
 
-.model-selection-card.selected {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: #3b82f6;
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
-}
-
 .selection-check {
   position: absolute;
   top: 0.5rem;
@@ -618,12 +622,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.model-selection-card h4 {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.125rem;
-  color: #e5e7eb;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .model-series {
