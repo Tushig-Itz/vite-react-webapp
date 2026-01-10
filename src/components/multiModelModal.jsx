@@ -6,6 +6,8 @@ export function MultiModelModal({ isOpen, onClose, devices, onExport }) {
   const [selectedModels, setSelectedModels] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredDevices, setFilteredDevices] = useState(devices);
+
+  // Filter devices based on search term
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredDevices(devices);
@@ -92,7 +94,7 @@ export function MultiModelModal({ isOpen, onClose, devices, onExport }) {
             {filteredDevices.map((device) => {
               const isSelected = selectedModels.some(d => d.model === device.model);
               return (
-                <div key={device.model} style={{ position: 'relative' }}>
+                <div key={device.model} className="model-card-wrapper">
                   {isSelected && (
                     <div className="selection-check">
                       <Check size={16} />
