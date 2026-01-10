@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Download, Zap, Shield, Wifi, HardDrive, Users, Network, FileText, GitCompare } from 'lucide-react';
 import { SearchBar } from './components/searchBar';
 import { DeviceGrid } from './components/deviceGrid';
-import { formatNumber } from './utils/formatters';
-import { Download, Zap, Shield, Wifi, HardDrive, Users, Network, FileText, GitCompare } from 'lucide-react';
-import { RfpModal } from './components/RfpModal';
-import { MultiModelModal } from './components/MultiModelModal';
+import { RfpModal } from './components/RfpModal.jsx';
+import { MultiModelModal } from './components/MultiModelModal.jsx';
 import { exportSingleWithRFP, exportMultipleModels } from './utils/excelExport';
+import { formatNumber } from './utils/formatters';
 import './App.css';
 
 function App() {
@@ -76,6 +76,7 @@ function App() {
     setRfpRequirements(requirements);
   };
 
+  // Check if any RFP requirements are set
   const hasRfpRequirements = Object.values(rfpRequirements).some(val => val !== '');
 
   if (loading) return <div className="loading"><div className="spinner"></div><p>Loading devices...</p></div>;
