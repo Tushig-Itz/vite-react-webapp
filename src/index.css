@@ -915,8 +915,11 @@ body {
   padding: 1.5rem;
   overflow-y: auto;
   overflow-x: hidden;
-  flex: 1 1 auto;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: auto;
   min-height: 0;
+  max-height: calc(85vh - 10rem);
 }
 
 .modal-body::-webkit-scrollbar {
