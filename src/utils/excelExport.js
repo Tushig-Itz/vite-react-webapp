@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 
-export const exportDeviceToExcel = async (device, formatNumber) => {
+// RFP compare mode
+export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements = {}) => {
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(device.model);
@@ -39,9 +40,13 @@ export const exportDeviceToExcel = async (device, formatNumber) => {
             };
         }
 
-        // rows
-        const addRow = (label, customer = '', value, useFormula = false) => {
-            const row = worksheet.addRow([label, customer, value || 'N/A', '']);
+        // row
+        const addRow = (label, rfpKey, value, unit = '', useFormula = false) => {
+            const customerValue = rfpRequirements[rfpKey] || '';
+            const displayCustomerValue = customerValue ? `${customerValue}${unit ? ' ' + unit : ''}` : '';
+            const displayDeviceValue = value || 'N/A';
+
+            const row = worksheet.addRow([label, displayCustomerValue, displayDeviceValue, '']);
             const rowNum = row.number;
             row.font = { size: 11 };
             row.height = 25;
@@ -60,7 +65,7 @@ export const exportDeviceToExcel = async (device, formatNumber) => {
             row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
             row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            if (useFormula) {
+            if (useFormula && customerValue) {
                 row.getCell(4).value = {
                     formula: `=IF(OR(B${rowNum}="",ISBLANK(B${rowNum})),"",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)>IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"More",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)=IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"Same","Less")))`
                 };
@@ -84,20 +89,32 @@ export const exportDeviceToExcel = async (device, formatNumber) => {
             }
         }
 
-        // specs
-        addRow('Firewall Throughput', '', device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A', true);
-        addRow('NGFW Throughput', '', device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A', true);
-        addRow('Threat Protection Throughput', '', device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A', true);
-        addRow('Concurrent Sessions (TCP)', '', formatNumber(device.concurrent_sessions), true);
-        addRow('New Session/Second (TCP)', '', formatNumber(device.new_sessions_per_sec), true);
-        addRow('IPS Throughput', '', device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A', true);
-        addRow('AV Throughput', '', device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A', true);
-        addRow('IPsec VPN Throughput', '', device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A', true);
-        addRow('SSL Proxy Throughput', '', device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A', true);
-        addRow('Virtual Systems (Max)', '', `${device.virtual_systems_max || 0}`, true);
-        addRow('SSL VPN Users (Max)', '', device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A', true);
-        addRow('Gateway-to-Gateway VPN', '', device.gateway_to_gateway_vpn || 'N/A', true);
-        addRow('Firewall Policy', '', formatNumber(device.firewall_policy_max), true);
+        addRow('Firewall Throughput', 'firewall_throughput_1518_gbps',
+            device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A', 'Gbps', true);
+        addRow('NGFW Throughput', 'ngfw_throughput_gbps',
+            device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
+        addRow('Threat Protection Throughput', 'threat_protection_gbps',
+            device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A', 'Gbps', true);
+        addRow('Concurrent Sessions (TCP)', 'concurrent_sessions',
+            formatNumber(device.concurrent_sessions), '', true);
+        addRow('New Session/Second (TCP)', 'new_sessions_per_sec',
+            formatNumber(device.new_sessions_per_sec), '', true);
+        addRow('IPS Throughput', 'ips_throughput_gbps',
+            device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
+        addRow('AV Throughput', 'av_throughput_gbps',
+            device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
+        addRow('IPsec VPN Throughput', 'ipsec_vpn_throughput_gbps',
+            device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
+        addRow('SSL Proxy Throughput', 'ssl_proxy_throughput_gbps',
+            device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
+        addRow('Virtual Systems (Max)', 'virtual_systems_max',
+            `${device.virtual_systems_max || 0}`, '', true);
+        addRow('SSL VPN Users (Max)', 'ssl_vpn_users_max',
+            device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A', '', true);
+        addRow('Gateway-to-Gateway VPN', 'gateway_to_gateway_vpn',
+            device.gateway_to_gateway_vpn || 'N/A', '', true);
+        addRow('Firewall Policy', 'firewall_policy_max',
+            formatNumber(device.firewall_policy_max), '', true);
 
         if (device.release_year) {
             addRow('Release Year', '', device.release_year);
@@ -116,7 +133,7 @@ export const exportDeviceToExcel = async (device, formatNumber) => {
         link.href = url;
 
         const timestamp = new Date().toISOString().split('T')[0];
-        link.download = `FortiGate_${device.model}_${timestamp}.xlsx`;
+        link.download = `FortiGate_${device.model}_RFP_${timestamp}.xlsx`;
 
         link.click();
         window.URL.revokeObjectURL(url);
@@ -125,4 +142,150 @@ export const exportDeviceToExcel = async (device, formatNumber) => {
         console.error('Export error:', error);
         throw error;
     }
+};
+
+// Model compare mode
+export const exportMultipleModels = async (devices, formatNumber) => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Comparison');
+
+        // dynamic columns
+        const columns = [{ width: 30 }]; // First column for spec names
+        for (let i = 0; i < devices.length; i++) {
+            columns.push({ width: 25 }); // One column per device
+        }
+        worksheet.columns = columns;
+
+        // title
+        const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
+        titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
+        titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.mergeCells(1, 1, 1, devices.length + 1);
+        worksheet.addRow([]);
+
+        // header
+        const headerData = ['Үзүүлэлтүүд', ...devices.map(d => d.model)];
+        const headerRow = worksheet.addRow(headerData);
+        headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        for (let i = 1; i <= devices.length + 1; i++) {
+            headerRow.getCell(i).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF3B82F6' }
+            };
+            headerRow.getCell(i).border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thick' },
+                left: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+
+        // row
+        const addComparisonRow = (label, getValue) => {
+            const rowData = [label, ...devices.map(device => getValue(device) || 'N/A')];
+            const row = worksheet.addRow(rowData);
+            row.font = { size: 11 };
+            row.height = 25;
+
+            for (let i = 1; i <= devices.length + 1; i++) {
+                row.getCell(i).border = {
+                    top: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    left: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                if (i === 1) {
+                    row.getCell(i).font = { size: 11, color: { argb: 'FF6B7280' } };
+                } else {
+                    row.getCell(i).alignment = { horizontal: 'center', vertical: 'middle' };
+                }
+            }
+        };
+
+        // Interface row
+        const interfaceData = ['Interface', ...devices.map(d => d.interface_raw || 'N/A')];
+        const intRow = worksheet.addRow(interfaceData);
+        intRow.height = 60;
+        intRow.getCell(1).alignment = { vertical: 'middle' };
+        intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+
+        for (let i = 2; i <= devices.length + 1; i++) {
+            intRow.getCell(i).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+            intRow.getCell(i).border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thin' },
+                left: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+        intRow.getCell(1).border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' }
+        };
+
+        addComparisonRow('Firewall Throughput', d =>
+            d.firewall_throughput_1518_gbps ? `${d.firewall_throughput_1518_gbps} Gbps` : 'N/A');
+        addComparisonRow('NGFW Throughput', d =>
+            d.ngfw_throughput_gbps ? `${d.ngfw_throughput_gbps} Gbps` : 'N/A');
+        addComparisonRow('Threat Protection Throughput', d =>
+            d.threat_protection_gbps ? `${d.threat_protection_gbps} Gbps` : 'N/A');
+        addComparisonRow('Concurrent Sessions (TCP)', d =>
+            formatNumber(d.concurrent_sessions));
+        addComparisonRow('New Session/Second (TCP)', d =>
+            formatNumber(d.new_sessions_per_sec));
+        addComparisonRow('IPS Throughput', d =>
+            d.ips_throughput_gbps ? `${d.ips_throughput_gbps} Gbps` : 'N/A');
+        addComparisonRow('AV Throughput', d =>
+            d.av_throughput_gbps ? `${d.av_throughput_gbps} Gbps` : 'N/A');
+        addComparisonRow('IPsec VPN Throughput', d =>
+            d.ipsec_vpn_throughput_gbps ? `${d.ipsec_vpn_throughput_gbps} Gbps` : 'N/A');
+        addComparisonRow('SSL Proxy Throughput', d =>
+            d.ssl_proxy_throughput_gbps ? `${d.ssl_proxy_throughput_gbps} Gbps` : 'N/A');
+        addComparisonRow('Virtual Systems (Max)', d =>
+            `${d.virtual_systems_max || 0}`);
+        addComparisonRow('SSL VPN Users (Max)', d =>
+            d.ssl_vpn_users_max ? `${d.ssl_vpn_users_max}` : 'N/A');
+        addComparisonRow('Gateway-to-Gateway VPN', d =>
+            d.gateway_to_gateway_vpn || 'N/A');
+        addComparisonRow('Firewall Policy', d =>
+            formatNumber(d.firewall_policy_max));
+
+
+        if (devices.some(d => d.release_year)) {
+            addComparisonRow('Release Year', d => d.release_year || 'N/A');
+        }
+        if (devices.some(d => d.support_years)) {
+            addComparisonRow('Support Years', d =>
+                d.support_years ? `${d.support_years} years` : 'N/A');
+        }
+
+        // generate
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        const timestamp = new Date().toISOString().split('T')[0];
+        link.download = `FortiGate_Comparison_${timestamp}.xlsx`;
+
+        link.click();
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error('Export error:', error);
+        throw error;
+    }
+};
+
+export const exportDeviceToExcel = async (device, formatNumber) => {
+    return exportSingleWithRFP(device, formatNumber, {});
 };

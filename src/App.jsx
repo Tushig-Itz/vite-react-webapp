@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Download, Zap, Shield, Wifi, HardDrive, Users, Network } from 'lucide-react';
 import { SearchBar } from './components/searchBar';
 import { DeviceGrid } from './components/deviceGrid';
-import { exportDeviceToExcel } from './utils/excelExport';
 import { formatNumber } from './utils/formatters';
+import { Download, Zap, Shield, Wifi, HardDrive, Users, Network, FileText, GitCompare } from 'lucide-react';
+import { RfpModal } from './components/RfpModal';
+import { MultiModelModal } from './components/MultiModelModal';
+import { exportSingleWithRFP, exportMultipleModels } from './utils/excelExport';
 import './App.css';
 
 function App() {
@@ -13,6 +15,9 @@ function App() {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showRfpModal, setShowRfpModal] = useState(false);
+  const [showMultiModal, setShowMultiModal] = useState(false);
+  const [rfpRequirements, setRfpRequirements] = useState({});
 
   useEffect(() => {
     fetchDevices();
@@ -51,13 +56,27 @@ function App() {
     }
   };
 
-  const handleExport = async () => {
+  const handleExportSingle = async () => {
     try {
-      await exportDeviceToExcel(selectedDevice, formatNumber);
+      await exportSingleWithRFP(selectedDevice, formatNumber, rfpRequirements);
     } catch (error) {
       alert(`Export failed: ${error.message}`);
     }
   };
+
+  const handleExportMultiple = async (selectedModels) => {
+    try {
+      await exportMultipleModels(selectedModels, formatNumber);
+    } catch (error) {
+      alert(`Export failed: ${error.message}`);
+    }
+  };
+
+  const handleSaveRfp = (requirements) => {
+    setRfpRequirements(requirements);
+  };
+
+  const hasRfpRequirements = Object.values(rfpRequirements).some(val => val !== '');
 
   if (loading) return <div className="loading"><div className="spinner"></div><p>Loading devices...</p></div>;
   if (error) return <div className="loading"><p style={{ color: '#ef4444' }}>Error: {error}</p></div>;
@@ -65,8 +84,27 @@ function App() {
   return (
     <div>
       <div className="header">
-        <h1>FortiGate Specs Lookup</h1>
-        <p>Quick reference for FortiGate firewall specifications</p>
+        <div>
+          <h1>FortiGate Specs Lookup</h1>
+          <p>Quick reference for FortiGate firewall specifications</p>
+        </div>
+        <div className="header-buttons">
+          <button
+            onClick={() => setShowRfpModal(true)}
+            className="rfp-button"
+          >
+            <FileText size={18} />
+            {hasRfpRequirements ? 'Edit RFP' : 'Create RFP'}
+            {hasRfpRequirements && <span className="rfp-badge">✓</span>}
+          </button>
+          <button
+            onClick={() => setShowMultiModal(true)}
+            className="compare-button"
+          >
+            <GitCompare size={18} />
+            Compare Models
+          </button>
+        </div>
       </div>
 
       <SearchBar value={searchTerm} onChange={setSearchTerm} />
@@ -94,29 +132,8 @@ function App() {
                 </p>
               </div>
               <button
-                onClick={handleExport}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1.5rem',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  fontWeight: '500',
-                  transition: 'all 0.2s',
-                  boxShadow: '0 4px 6px rgba(59, 130, 246, 0.3)'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(59, 130, 246, 0.4)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(59, 130, 246, 0.3)';
-                }}
+                onClick={handleExportSingle}
+                className="export-button"
               >
                 <Download size={18} />
                 Export to Excel
@@ -128,7 +145,7 @@ function App() {
             <div className="spec-card">
               <div className="spec-card-header">
                 <Zap size={20} />
-                <h3>Firewall Performance</h3>
+                <h3>Firewall Throughput</h3>
               </div>
               <div>
                 <div className="spec-row">
@@ -265,59 +282,22 @@ function App() {
               </p>
             </div>
           )}
-
-          {/* Product Information */}
-          {(selectedDevice.release_year || selectedDevice.support_years || selectedDevice.datasheet_date || selectedDevice.datasheet_url) && (
-            <div className="spec-card" style={{ marginTop: '1.5rem' }}>
-              <div className="spec-card-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <h3>Product Information</h3>
-              </div>
-              <div>
-                {selectedDevice.release_year && (
-                  <div className="spec-row">
-                    <span className="spec-label">Release Year</span>
-                    <span className="spec-value">{selectedDevice.release_year}</span>
-                  </div>
-                )}
-                {selectedDevice.support_years && (
-                  <div className="spec-row">
-                    <span className="spec-label">Support Period</span>
-                    <span className="spec-value">{selectedDevice.support_years} <span className="unit">years</span></span>
-                  </div>
-                )}
-                {selectedDevice.datasheet_date && (
-                  <div className="spec-row">
-                    <span className="spec-label">Datasheet Date</span>
-                    <span className="spec-value">{selectedDevice.datasheet_date}</span>
-                  </div>
-                )}
-                {selectedDevice.datasheet_url && (
-                  <div className="spec-row">
-                    <span className="spec-label">Datasheet</span>
-                    <span className="spec-value">
-                      <a 
-                        href={selectedDevice.datasheet_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ color: '#60a5fa', textDecoration: 'none' }}
-                        onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
-                        onMouseOut={(e) => e.target.style.textDecoration = 'none'}
-                      >
-                        View PDF
-                      </a>
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
+
+      <RfpModal
+        isOpen={showRfpModal}
+        onClose={() => setShowRfpModal(false)}
+        onSave={handleSaveRfp}
+        initialData={rfpRequirements}
+      />
+
+      <MultiModelModal
+        isOpen={showMultiModal}
+        onClose={() => setShowMultiModal(false)}
+        devices={devices}
+        onExport={handleExportMultiple}
+      />
     </div>
   );
 }
