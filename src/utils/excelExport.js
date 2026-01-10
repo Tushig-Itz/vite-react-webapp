@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 
-// Mode 1: Single model with RFP comparison
+// RFP comparison
 export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements = {}) => {
     try {
         const workbook = new ExcelJS.Workbook();

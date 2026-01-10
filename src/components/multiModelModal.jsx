@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, GitCompare, Search, Check } from 'lucide-react';
-import { DeviceCard } from './DeviceCard.jsx';
+import { DeviceCard } from './deviceCard.jsx';
 
 export function MultiModelModal({ isOpen, onClose, devices, onExport }) {
   const [selectedModels, setSelectedModels] = useState([]);
