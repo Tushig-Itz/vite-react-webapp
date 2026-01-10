@@ -491,28 +491,36 @@ body {
 /* Modal Body - SINGLE SOURCE OF TRUTH */
 .modal-body {
   padding: 1.5rem;
-  overflow-y: auto;
+  overflow-y: scroll !important;
   overflow-x: hidden;
   flex: 1;
   min-height: 0;
 }
 
 .modal-body::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;
 }
 
 .modal-body::-webkit-scrollbar-track {
-  background: #1f2937;
-  border-radius: 4px;
+  background: #111827;
+  border-radius: 6px;
+  border: 1px solid #374151;
 }
 
 .modal-body::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 4px;
+  background: #60a5fa;
+  border-radius: 6px;
+  border: 2px solid #111827;
 }
 
 .modal-body::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
+  background: #3b82f6;
+}
+
+/* Firefox scrollbar */
+.modal-body {
+  scrollbar-width: auto;
+  scrollbar-color: #60a5fa #111827;
 }
 
 /* RFP Form */
