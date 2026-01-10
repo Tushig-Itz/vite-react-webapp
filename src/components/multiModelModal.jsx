@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { X, GitCompare, Search, Check } from 'lucide-react';
-import { DeviceCard } from './deviceCard.jsx';
+import { DeviceCard } from './DeviceCard.jsx';
 
 export function MultiModelModal({ isOpen, onClose, devices, onExport }) {
   const [selectedModels, setSelectedModels] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredDevices, setFilteredDevices] = useState(devices);
-
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredDevices(devices);

@@ -76,7 +76,6 @@ function App() {
     setRfpRequirements(requirements);
   };
 
-  // Check if any RFP requirements are set
   const hasRfpRequirements = Object.values(rfpRequirements).some(val => val !== '');
 
   if (loading) return <div className="loading"><div className="spinner"></div><p>Loading devices...</p></div>;
