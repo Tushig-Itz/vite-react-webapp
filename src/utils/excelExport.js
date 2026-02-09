@@ -1,6 +1,146 @@
 import ExcelJS from 'exceljs';
 
-// RFP comparison
+// RFP Match Export: Simple side-by-side (no comparison)
+export const exportRfpMatch = async (device, formatNumber, rfpRequirements = {}) => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(device.model);
+
+        // column widths - 3 columns only
+        worksheet.columns = [
+            { width: 30 },
+            { width: 25 },
+            { width: 25 }
+        ];
+
+        // title
+        const titleRow = worksheet.addRow(['FortiGate RFP Match']);
+        titleRow.font = { size: 16, bold: true, color: { argb: 'FF10B981' } };
+        titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
+        worksheet.mergeCells('A1:C1');
+        worksheet.addRow([]);
+
+        // header 
+        const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн шаардлага', device.model]);
+        headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        for (let i = 1; i <= 3; i++) {
+            headerRow.getCell(i).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF10B981' }
+            };
+            headerRow.getCell(i).border = {
+                top: { style: 'thin' },
+                bottom: { style: 'thick' },
+                left: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+
+        const addRow = (label, reqValue, deviceValue) => {
+            const row = worksheet.addRow([label, reqValue || '-', deviceValue || 'N/A']);
+            row.alignment = { horizontal: 'center', vertical: 'middle' };
+            for (let i = 1; i <= 3; i++) {
+                row.getCell(i).border = {
+                    top: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    left: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            }
+            row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+            row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+        };
+
+        // Add specs in order
+        addRow('Firewall Throughput (1518 Byte UDP)', 
+               rfpRequirements.firewall_throughput_1518_gbps, 
+               device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : null);
+        
+        addRow('NGFW Throughput', 
+               rfpRequirements.ngfw_throughput_gbps, 
+               device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : null);
+        
+        addRow('Threat Protection Throughput', 
+               rfpRequirements.threat_protection_gbps, 
+               device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : null);
+        
+        addRow('Concurrent Sessions (TCP)', 
+               rfpRequirements.concurrent_sessions ? formatNumber(rfpRequirements.concurrent_sessions) : '', 
+               device.concurrent_sessions ? formatNumber(device.concurrent_sessions) : null);
+        
+        addRow('New Session/Second (TCP)', 
+               rfpRequirements.new_sessions_per_sec ? formatNumber(rfpRequirements.new_sessions_per_sec) : '', 
+               device.new_sessions_per_sec ? formatNumber(device.new_sessions_per_sec) : null);
+        
+        addRow('IPS Throughput', 
+               rfpRequirements.ips_throughput_gbps, 
+               device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : null);
+        
+        addRow('AV Throughput (HTTP)', 
+               rfpRequirements.av_throughput_gbps, 
+               device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : null);
+        
+        addRow('IPsec VPN Throughput', 
+               rfpRequirements.ipsec_vpn_throughput_gbps, 
+               device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : null);
+        
+        addRow('SSL Proxy Throughput', 
+               rfpRequirements.ssl_proxy_throughput_gbps, 
+               device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : null);
+        
+        addRow('Virtual Systems (Max)', 
+               rfpRequirements.virtual_systems_max, 
+               device.virtual_systems_max);
+        
+        addRow('SSL VPN Users (Max)', 
+               rfpRequirements.ssl_vpn_users_max, 
+               device.ssl_vpn_users_max);
+        
+        addRow('Gateway-to-Gateway VPN', 
+               rfpRequirements.gateway_to_gateway_vpn, 
+               device.gateway_to_gateway_vpn);
+        
+        addRow('Firewall Policy (Max)', 
+               rfpRequirements.firewall_policy_max ? formatNumber(rfpRequirements.firewall_policy_max) : '', 
+               device.firewall_policy_max ? formatNumber(device.firewall_policy_max) : null);
+
+        // Interface row
+        if (device.interface_raw) {
+            const intRow = worksheet.addRow(['Interface', '-', device.interface_raw]);
+            const lines = Math.ceil(device.interface_raw.length / 50);
+            intRow.height = Math.max(40, lines * 15);
+            intRow.getCell(1).alignment = { vertical: 'middle' };
+            intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+            intRow.getCell(3).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+            for (let i = 1; i <= 3; i++) {
+                intRow.getCell(i).border = {
+                    top: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    left: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            }
+        }
+
+        // Download
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `FortiGate_RFP_${device.model}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Export error:', error);
+        throw error;
+    }
+};
+
+// Mode 1: Single model with RFP comparison
 export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements = {}) => {
     try {
         const workbook = new ExcelJS.Workbook();
@@ -40,7 +180,7 @@ export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements 
             };
         }
 
-        // rfp row
+        // Helper function to add row with RFP value
         const addRow = (label, rfpKey, value, unit = '', useFormula = false) => {
             const customerValue = rfpRequirements[rfpKey] || '';
             const displayCustomerValue = customerValue ? `${customerValue}${unit ? ' ' + unit : ''}` : '';
@@ -75,6 +215,7 @@ export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements 
         // raw interface row
         if (device.interface_raw) {
             const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
+            // Dynamic height based on content length (roughly 15 chars per line)
             const lines = Math.ceil(device.interface_raw.length / 50);
             intRow.height = Math.max(40, lines * 15);
             intRow.getCell(1).alignment = { vertical: 'middle' };
@@ -146,24 +287,27 @@ export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements 
     }
 };
 
-// models comparison
+// Mode 2: Multiple models comparison (no RFP, no comparison column)
 export const exportMultipleModels = async (devices, formatNumber) => {
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Comparison');
 
+        // Dynamic column widths based on number of devices
         const columns = [{ width: 30 }]; // First column for spec names
         for (let i = 0; i < devices.length; i++) {
             columns.push({ width: 25 }); // One column per device
         }
         worksheet.columns = columns;
 
+        // Title
         const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
         titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
         titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
         worksheet.mergeCells(1, 1, 1, devices.length + 1);
         worksheet.addRow([]);
 
+        // Header with model names
         const headerData = ['Үзүүлэлтүүд', ...devices.map(d => d.model)];
         const headerRow = worksheet.addRow(headerData);
         headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -183,7 +327,7 @@ export const exportMultipleModels = async (devices, formatNumber) => {
             };
         }
 
-        // row
+        // Helper function to add comparison row
         const addComparisonRow = (label, getValue) => {
             const rowData = [label, ...devices.map(device => getValue(device) || 'N/A')];
             const row = worksheet.addRow(rowData);
@@ -205,9 +349,11 @@ export const exportMultipleModels = async (devices, formatNumber) => {
             }
         };
 
+        // Interface row - special handling for multi-line content
         const interfaceData = ['Interface', ...devices.map(d => d.interface_raw || 'N/A')];
         const intRow = worksheet.addRow(interfaceData);
-
+        
+        // Calculate dynamic height based on longest interface description
         const maxLength = Math.max(...devices.map(d => (d.interface_raw || '').length));
         const lines = Math.ceil(maxLength / 50);
         intRow.height = Math.max(40, lines * 15);
@@ -231,7 +377,7 @@ export const exportMultipleModels = async (devices, formatNumber) => {
             right: { style: 'thin' }
         };
 
-        // add specs
+        // Add all specs
         addComparisonRow('Firewall Throughput', d => 
             d.firewall_throughput_1518_gbps ? `${d.firewall_throughput_1518_gbps} Gbps` : 'N/A');
         addComparisonRow('NGFW Throughput', d => 
@@ -259,6 +405,7 @@ export const exportMultipleModels = async (devices, formatNumber) => {
         addComparisonRow('Firewall Policy', d => 
             formatNumber(d.firewall_policy_max));
 
+        // Only add these rows if at least one device has the value
         if (devices.some(d => d.release_year)) {
             addComparisonRow('Release Year', d => d.release_year || 'N/A');
         }
@@ -267,7 +414,7 @@ export const exportMultipleModels = async (devices, formatNumber) => {
                 d.support_years ? `${d.support_years} years` : 'N/A');
         }
 
-        // generate
+        // Generate
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -287,6 +434,8 @@ export const exportMultipleModels = async (devices, formatNumber) => {
         throw error;
     }
 };
+
+// Legacy export for backward compatibility (Mode 1 without RFP)
 export const exportDeviceToExcel = async (device, formatNumber) => {
     return exportSingleWithRFP(device, formatNumber, {});
 };

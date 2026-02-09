@@ -46,10 +46,10 @@ with open('fortigate_specs.sql', 'r') as f:
                     virtual_systems_default, virtual_systems_max,
                     ssl_vpn_users_default, ssl_vpn_users_max,
                     gateway_to_gateway_vpn, firewall_policy_max,
-                    ge_rj45_ports, ge_sfp_ports, ten_ge_sfp_ports,
-                    fortilink_ports, fortilink_slots, mgmt_ports, ha_ports, dmz_ports, wan_ports,
+                    ge_rj45_ports, ge_sfp_ports, sfp28_ports,
+                    qsfp28_ports, mgmt_ports, ha_ports, dmz_ports, wan_ports,
                     interface_raw, release_year, support_years, datasheet_url, datasheet_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 values[0], values[1], model, model_norm, values[3],
                 values[4], values[5], values[6], values[7], values[8],
@@ -57,8 +57,7 @@ with open('fortigate_specs.sql', 'r') as f:
                 values[14], values[15], values[16], values[17], values[18],
                 values[19], values[20], values[21], values[22], values[23],
                 values[24], values[25], values[26], values[27], values[28],
-                values[29], values[30], values[31], values[32], values[33],
-                values[34]
+                values[29], values[30], values[31], values[32], values[33], values[34]
             ))
             
             print(f"Inserted: {model} (searchable as: {model_norm})")

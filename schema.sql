@@ -33,9 +33,8 @@ CREATE TABLE IF NOT EXISTS devices (
     -- Interfaces
     ge_rj45_ports INTEGER,
     ge_sfp_ports INTEGER,
-    ten_ge_sfp_ports INTEGER,
-    fortilink_ports INTEGER,
-    fortilink_slots INTEGER,
+    sfp28_ports INTEGER,
+    qsfp28_ports INTEGER,
     mgmt_ports INTEGER,
     ha_ports INTEGER,
     wan_ports INTEGER,
