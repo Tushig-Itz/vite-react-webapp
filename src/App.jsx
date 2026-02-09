@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Download, Zap, Shield, Wifi, HardDrive, Users, Network, FileText, GitCompare } from 'lucide-react';
 import { SearchBar } from './components/searchBar';
 import { DeviceGrid } from './components/deviceGrid';
-import { RfpModal } from './components/rfpModal.jsx';
-import { MultiModelModal } from './components/multiModelModal.jsx';
-import { exportSingleWithRFP, exportMultipleModels } from './utils/excelExport';
+import { RfpModal } from './components/RfpModal.jsx';
+import { MultiModelModal } from './components/MultiModelModal.jsx';
+import { exportSingleWithRFP, exportMultipleModels, exportRfpMatch } from './utils/excelExport';
 import { formatNumber } from './utils/formatters';
 import './App.css';
 
@@ -18,24 +18,104 @@ function App() {
   const [showRfpModal, setShowRfpModal] = useState(false);
   const [showMultiModal, setShowMultiModal] = useState(false);
   const [rfpRequirements, setRfpRequirements] = useState({});
+  const [rfpFilterActive, setRfpFilterActive] = useState(false);
 
   useEffect(() => {
     fetchDevices();
   }, []);
 
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredDevices(devices);
-    } else {
+    let filtered = devices;
+
+    // Apply search filter
+    if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      const filtered = devices.filter(device =>
+      filtered = filtered.filter(device =>
         device.model.toLowerCase().includes(term) ||
         device.model_norm.toLowerCase().includes(term) ||
         (device.series && device.series.toLowerCase().includes(term))
       );
-      setFilteredDevices(filtered);
     }
-  }, [searchTerm, devices]);
+
+    // Apply RFP filter if active
+    if (rfpFilterActive && Object.keys(rfpRequirements).length > 0) {
+      filtered = filterByRfpRequirements(filtered, rfpRequirements);
+    }
+
+    setFilteredDevices(filtered);
+  }, [searchTerm, devices, rfpFilterActive, rfpRequirements]);
+
+  // Filter devices that meet RFP requirements (no spec worse than required)
+  const filterByRfpRequirements = (deviceList, requirements) => {
+    const specs = [
+      'firewall_throughput_1518_gbps',
+      'ngfw_throughput_gbps',
+      'threat_protection_gbps',
+      'concurrent_sessions',
+      'new_sessions_per_sec',
+      'ips_throughput_gbps',
+      'av_throughput_gbps',
+      'ipsec_vpn_throughput_gbps',
+      'ssl_proxy_throughput_gbps',
+      'virtual_systems_max',
+      'ssl_vpn_users_max',
+      'gateway_to_gateway_vpn',
+      'firewall_policy_max'
+    ];
+
+    return deviceList.filter(device => {
+      // Device must meet or exceed ALL non-empty requirements
+      return specs.every(spec => {
+        const reqValue = requirements[spec];
+        if (!reqValue || reqValue === '') return true; // Skip empty requirements
+
+        const deviceValue = device[spec];
+        if (!deviceValue) return false; // Device missing this spec
+
+        // Extract numeric value (handle formats like "20/18/10 Gbps" -> take first number)
+        const parseValue = (val) => {
+          if (typeof val === 'number') return val;
+          const str = String(val).trim();
+          const match = str.match(/^(\d+\.?\d*)/);
+          return match ? parseFloat(match[1]) : 0;
+        };
+
+        const reqNum = parseValue(reqValue);
+        const deviceNum = parseValue(deviceValue);
+
+        // Device value must be >= requirement
+        return deviceNum >= reqNum;
+      });
+    }).sort((a, b) => {
+      // Sort by total "excess" capacity (how much better than requirements)
+      let scoreA = 0;
+      let scoreB = 0;
+
+      specs.forEach(spec => {
+        const reqValue = requirements[spec];
+        if (!reqValue || reqValue === '') return;
+
+        const parseValue = (val) => {
+          if (typeof val === 'number') return val;
+          const str = String(val).trim();
+          const match = str.match(/^(\d+\.?\d*)/);
+          return match ? parseFloat(match[1]) : 0;
+        };
+
+        const reqNum = parseValue(reqValue);
+        const valA = parseValue(a[spec] || 0);
+        const valB = parseValue(b[spec] || 0);
+
+        // Add percentage over requirement
+        if (reqNum > 0) {
+          scoreA += (valA / reqNum);
+          scoreB += (valB / reqNum);
+        }
+      });
+
+      return scoreB - scoreA; // Higher score first (best match)
+    });
+  };
 
   const fetchDevices = async () => {
     setLoading(true);
@@ -74,8 +154,20 @@ function App() {
 
   const handleSaveRfp = (requirements) => {
     setRfpRequirements(requirements);
+    const hasRequirements = Object.values(requirements).some(val => val !== '');
+    setRfpFilterActive(hasRequirements);
   };
 
+  const handleToggleRfpFilter = () => {
+    setRfpFilterActive(!rfpFilterActive);
+  };
+
+  const handleClearRfp = () => {
+    setRfpRequirements({});
+    setRfpFilterActive(false);
+  };
+
+  // Check if any RFP requirements are set
   const hasRfpRequirements = Object.values(rfpRequirements).some(val => val !== '');
 
   if (loading) return <div className="loading"><div className="spinner"></div><p>Loading devices...</p></div>;
@@ -109,6 +201,49 @@ function App() {
 
       <SearchBar value={searchTerm} onChange={setSearchTerm} />
 
+      {/* RFP Filter Status */}
+      {hasRfpRequirements && (
+        <div style={{ 
+          marginBottom: '1.5rem', 
+          padding: '1rem', 
+          background: rfpFilterActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)', 
+          border: `1px solid ${rfpFilterActive ? '#10b981' : '#6b7280'}`, 
+          borderRadius: '0.75rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <div>
+            <p style={{ fontWeight: '500', color: '#e5e7eb', marginBottom: '0.25rem' }}>
+              RFP Filter: {rfpFilterActive ? 'Active' : 'Inactive'}
+            </p>
+            <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
+              {rfpFilterActive 
+                ? `Showing ${filteredDevices.length} device(s) that meet all requirements` 
+                : 'Click "Activate Filter" to show only matching devices'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={handleToggleRfpFilter}
+              className={rfpFilterActive ? 'btn-secondary' : 'btn-primary'}
+              style={{ fontSize: '0.875rem' }}
+            >
+              {rfpFilterActive ? 'Deactivate Filter' : 'Activate Filter'}
+            </button>
+            <button
+              onClick={handleClearRfp}
+              className="btn-secondary"
+              style={{ fontSize: '0.875rem' }}
+            >
+              Clear RFP
+            </button>
+          </div>
+        </div>
+      )}
+
       {filteredDevices.length > 0 ? (
         <DeviceGrid
           devices={filteredDevices}
@@ -132,11 +267,17 @@ function App() {
                 </p>
               </div>
               <button
-                onClick={handleExportSingle}
+                onClick={() => {
+                  if (rfpFilterActive && hasRfpRequirements) {
+                    exportRfpMatch(selectedDevice, formatNumber, rfpRequirements);
+                  } else {
+                    handleExportSingle();
+                  }
+                }}
                 className="export-button"
               >
                 <Download size={18} />
-                Export to Excel
+                {rfpFilterActive && hasRfpRequirements ? 'Export RFP Match' : 'Export to Excel'}
               </button>
             </div>
           </div>
@@ -253,12 +394,16 @@ function App() {
                   <span className="spec-value">{selectedDevice.ge_rj45_ports || 'N/A'}</span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">GE SFP Ports</span>
+                  <span className="spec-label">GE SFP+ Ports</span>
                   <span className="spec-value">{selectedDevice.ge_sfp_ports || 'N/A'}</span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">10GE SFP+ Ports</span>
-                  <span className="spec-value">{selectedDevice.ten_ge_sfp_ports || 'N/A'}</span>
+                  <span className="spec-label">SFP 28 Ports</span>
+                  <span className="spec-value">{selectedDevice.sfp28_ports || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">QSFP 28 Ports</span>
+                  <span className="spec-value">{selectedDevice.qsfp28_ports || 'N/A'}</span>
                 </div>
                 <div className="spec-row">
                   <span className="spec-label">WAN Ports</span>
@@ -280,56 +425,6 @@ function App() {
               <p style={{ color: '#9ca3af', fontSize: '0.875rem', lineHeight: '1.6' }}>
                 {selectedDevice.interface_raw}
               </p>
-            </div>
-          )}
-          {/* Product Information */}
-          {(selectedDevice.release_year || selectedDevice.support_years || selectedDevice.datasheet_date || selectedDevice.datasheet_url) && (
-            <div className="spec-card" style={{ marginTop: '1.5rem' }}>
-              <div className="spec-card-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <h3>Product Information</h3>
-              </div>
-              <div>
-                {selectedDevice.release_year && (
-                  <div className="spec-row">
-                    <span className="spec-label">Release Year</span>
-                    <span className="spec-value">{selectedDevice.release_year}</span>
-                  </div>
-                )}
-                {selectedDevice.support_years && (
-                  <div className="spec-row">
-                    <span className="spec-label">Support Period</span>
-                    <span className="spec-value">{selectedDevice.support_years} <span className="unit">years</span></span>
-                  </div>
-                )}
-                {selectedDevice.datasheet_date && (
-                  <div className="spec-row">
-                    <span className="spec-label">Datasheet Date</span>
-                    <span className="spec-value">{selectedDevice.datasheet_date}</span>
-                  </div>
-                )}
-                {selectedDevice.datasheet_url && (
-                  <div className="spec-row">
-                    <span className="spec-label">Datasheet</span>
-                    <span className="spec-value">
-                      <a 
-                        href={selectedDevice.datasheet_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ color: '#60a5fa', textDecoration: 'none' }}
-                        onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
-                        onMouseOut={(e) => e.target.style.textDecoration = 'none'}
-                      >
-                        View PDF
-                      </a>
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
           )}
         </div>
