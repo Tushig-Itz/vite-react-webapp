@@ -3,7 +3,7 @@ import { Download, Zap, Shield, Wifi, HardDrive, Users, Network, FileText, GitCo
 import { SearchBar } from './components/searchBar';
 import { DeviceGrid } from './components/deviceGrid';
 import { RfpModal } from './components/rfpModal.jsx';
-import { MultiModelModal } from './components/MultiModelModal.jsx';
+import { MultiModelModal } from './components/multiModelModal.jsx';
 import { exportSingleWithRFP, exportMultipleModels, exportRfpMatch } from './utils/excelExport';
 import { formatNumber } from './utils/formatters';
 import './App.css';
