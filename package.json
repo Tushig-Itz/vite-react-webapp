@@ -11,10 +11,13 @@
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
     "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.6",
     "exceljs": "^4.4.0",
+    "express": "^5.2.1",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -35,5 +38,4 @@
     "url": "https://github.com/Tushig-Itz/vite-react/issues"
   },
   "homepage": "https://github.com/Tushig-Itz/vite-react#readme"
-  
 }
