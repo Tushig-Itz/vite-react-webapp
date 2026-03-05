@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/build-db.js && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -35,4 +35,5 @@
     "url": "https://github.com/Tushig-Itz/vite-react/issues"
   },
   "homepage": "https://github.com/Tushig-Itz/vite-react#readme"
+  
 }
