@@ -7,17 +7,25 @@ export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   
   try {
-    const dbPath = join(process.cwd(), 'build.db');
+    // Vercel deploys public/ folder, not root
+    const dbPath = join(process.cwd(), 'public', 'build.db');
     
-    // Debug - use readdirSync from import, not require
     if (!existsSync(dbPath)) {
       console.error('Database not found at:', dbPath);
       console.error('Files in root:', readdirSync(process.cwd()));
+      
+      // Check if public folder exists
+      const publicExists = existsSync(join(process.cwd(), 'public'));
+      console.error('Public folder exists?', publicExists);
+      
+      if (publicExists) {
+        console.error('Files in public:', readdirSync(join(process.cwd(), 'public')));
+      }
+      
       return res.status(500).json({ 
         error: 'Database file not found',
         path: dbPath,
-        cwd: process.cwd(),
-        files: readdirSync(process.cwd())
+        cwd: process.cwd()
       });
     }
     

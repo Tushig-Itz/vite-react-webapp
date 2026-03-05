@@ -1,10 +1,3 @@
-#!/usr/bin/env node
-
-/**
- * Database Builder
- * Generates build.db from CSV at build time
- */
-
 import Database from 'better-sqlite3';
 import { readFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
@@ -15,14 +8,18 @@ const __dirname = dirname(__filename);
 
 console.log('\n🔨 Building database from CSV...\n');
 
-
+// Create public directory if it doesn't exist
 const publicDir = join(__dirname, '..', 'public');
 try {
   mkdirSync(publicDir, { recursive: true });
+  console.log('✓ Public directory ready');
 } catch (e) {
+  // Already exists
 }
 
 const dbPath = join(publicDir, 'build.db');
+console.log('📍 Database will be created at:', dbPath);
+
 const db = new Database(dbPath);
 
 console.log('📍 Database path:', dbPath);
