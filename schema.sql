@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS devices (
     family TEXT NOT NULL,
     model TEXT NOT NULL,
     model_norm TEXT NOT NULL UNIQUE,
-    series TEXT,  -- F / G (optional but handy)
+    series TEXT,
 
     -- Firewall throughput
     firewall_throughput_1518_gbps REAL,

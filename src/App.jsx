@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Download, Zap, Shield, Wifi, HardDrive, Users, Network, FileText, GitCompare } from 'lucide-react';
 import { SearchBar } from './components/searchBar';
 import { DeviceGrid } from './components/deviceGrid';
-import { RfpModal } from './components/RfpModal.jsx';
+import { RfpModal } from './components/rfpModal.jsx';
 import { MultiModelModal } from './components/MultiModelModal.jsx';
 import { exportSingleWithRFP, exportMultipleModels, exportRfpMatch } from './utils/excelExport';
 import { formatNumber } from './utils/formatters';

@@ -7,24 +7,71 @@ def normalize_model(model):
     normalized = re.sub(r'[^a-z0-9]', '', model.lower())
     return normalized
 
-conn = sqlite3.connect('public/build.db')
+# Create fresh database
+conn = sqlite3.connect('build.db')
 cursor = conn.cursor()
 
-cursor.execute("DELETE FROM devices")
-print("Cleared existing data")
+# Drop and recreate table
+cursor.execute("DROP TABLE IF EXISTS devices")
 
-with open('fortigate_specs.sql', 'r') as f:
+cursor.execute('''
+    CREATE TABLE devices (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vendor TEXT,
+        family TEXT,
+        model TEXT NOT NULL,
+        model_norm TEXT,
+        series TEXT,
+        firewall_throughput_1518_gbps TEXT,
+        firewall_throughput_512_gbps TEXT,
+        firewall_throughput_64_gbps TEXT,
+        ips_throughput_gbps TEXT,
+        ngfw_throughput_gbps TEXT,
+        threat_protection_gbps TEXT,
+        av_throughput_gbps TEXT,
+        ipsec_vpn_throughput_gbps TEXT,
+        ssl_proxy_throughput_gbps TEXT,
+        concurrent_sessions TEXT,
+        new_sessions_per_sec TEXT,
+        virtual_systems_default TEXT,
+        virtual_systems_max TEXT,
+        ssl_vpn_users_default TEXT,
+        ssl_vpn_users_max TEXT,
+        gateway_to_gateway_vpn TEXT,
+        firewall_policy_max TEXT,
+        ge_rj45_ports TEXT,
+        ge_sfp_ports TEXT,
+        sfp28_ports TEXT,
+        qsfp28_ports TEXT,
+        mgmt_ports TEXT,
+        ha_ports TEXT,
+        dmz_ports TEXT,
+        wan_ports TEXT,
+        interface_raw TEXT,
+        release_year TEXT,
+        support_years TEXT,
+        datasheet_url TEXT,
+        datasheet_date TEXT
+    )
+''')
+
+print("Created fresh devices table")
+
+# Import CSV
+with open('fortigate_specs.sql', 'r', encoding='utf-8') as f:
     reader = csv.reader(f)
     headers = next(reader)  # skip header
+    print(f"CSV has {len(headers)} columns: {headers[:5]}...")
     
     for row_num, row in enumerate(reader, start=2):
         if not row or not row[0]:
             continue
         
-        # Pad to 36 columns (was 34, added dmz_ports and model_norm)
-        while len(row) < 36:
+        # Pad row to 34 columns if needed
+        while len(row) < 34:
             row.append('')
         
+        # Clean values - convert empty strings to None
         values = []
         for val in row:
             if val.strip() == '':
@@ -32,7 +79,7 @@ with open('fortigate_specs.sql', 'r') as f:
             else:
                 values.append(val.strip())
         
-        model = values[2]
+        model = values[2]  # model is column 3 (0-indexed: 2)
         model_norm = normalize_model(model)
         
         try:
@@ -51,30 +98,62 @@ with open('fortigate_specs.sql', 'r') as f:
                     interface_raw, release_year, support_years, datasheet_url, datasheet_date
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                values[0], values[1], model, model_norm, values[3],
-                values[4], values[5], values[6], values[7], values[8],
-                values[9], values[10], values[11], values[12], values[13],
-                values[14], values[15], values[16], values[17], values[18],
-                values[19], values[20], values[21], values[22], values[23],
-                values[24], values[25], values[26], values[27], values[28],
-                values[29], values[30], values[31], values[32], values[33], values[34]
+                values[0],  # vendor
+                values[1],  # family
+                model,      # model
+                model_norm, # model_norm (computed)
+                values[3],  # series
+                values[4],  # firewall_throughput_1518_gbps
+                values[5],  # firewall_throughput_512_gbps
+                values[6],  # firewall_throughput_64_gbps
+                values[7],  # ips_throughput_gbps
+                values[8],  # ngfw_throughput_gbps
+                values[9],  # threat_protection_gbps
+                values[10], # av_throughput_gbps
+                values[11], # ipsec_vpn_throughput_gbps
+                values[12], # ssl_proxy_throughput_gbps
+                values[13], # concurrent_sessions
+                values[14], # new_sessions_per_sec
+                values[15], # virtual_systems_default
+                values[16], # virtual_systems_max
+                values[17], # ssl_vpn_users_default
+                values[18], # ssl_vpn_users_max
+                values[19], # gateway_to_gateway_vpn
+                values[20], # firewall_policy_max
+                values[21], # ge_rj45_ports
+                values[22], # ge_sfp_ports
+                values[23], # sfp28_ports
+                values[24], # qsfp28_ports
+                values[25], # mgmt_ports
+                values[26], # ha_ports
+                values[27], # dmz_ports
+                values[28], # wan_ports
+                values[29], # interface_raw
+                values[30], # release_year
+                values[31], # support_years
+                values[32], # datasheet_url
+                values[33]  # datasheet_date
             ))
             
-            print(f"Inserted: {model} (searchable as: {model_norm})")
+            print(f"✓ Inserted: {model} (searchable as: {model_norm})")
         except Exception as e:
-            print(f"ERROR on row {row_num} (model: {model}): {e}")
-            print(f"Row has {len(row)} columns")
+            print(f"✗ ERROR on row {row_num} (model: {model}): {e}")
+            print(f"  Row has {len(row)} values")
 
 conn.commit()
-conn.close()
 
-print("\nImport complete!")
-print("\nVerifying data:")
-conn = sqlite3.connect('public/build.db')
-cursor = conn.cursor()
-cursor.execute("SELECT COUNT(*) as total FROM devices")
-print(f"Total devices: {cursor.fetchone()[0]}")
-cursor.execute("SELECT model, ips_throughput_gbps, ngfw_throughput_gbps FROM devices ORDER BY model")
+# Verify
+cursor.execute("SELECT COUNT(*) FROM devices")
+total = cursor.fetchone()[0]
+print(f"\n{'='*60}")
+print(f"Import complete! Total devices: {total}")
+print(f"{'='*60}\n")
+
+# Show sample
+print("Sample data:")
+cursor.execute("SELECT model, series, ips_throughput_gbps, ngfw_throughput_gbps FROM devices ORDER BY model LIMIT 10")
 for row in cursor.fetchall():
-    print(f"  {row[0]}: IPS={row[1]} Gbps, NGFW={row[2]} Gbps")
+    print(f"  {row[0]:15} ({row[1]} Series) - IPS: {row[2] or 'N/A':>6} Gbps, NGFW: {row[3] or 'N/A':>6} Gbps")
+
 conn.close()
+print("\nDatabase created: build.db")
