@@ -1,23 +1,23 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   
   try {
-    // Look in ROOT, not public/
     const dbPath = join(process.cwd(), 'build.db');
     
-    // Debug
+    // Debug - use readdirSync from import, not require
     if (!existsSync(dbPath)) {
       console.error('Database not found at:', dbPath);
-      console.error('Files in root:', require('fs').readdirSync(process.cwd()));
+      console.error('Files in root:', readdirSync(process.cwd()));
       return res.status(500).json({ 
         error: 'Database file not found',
         path: dbPath,
-        cwd: process.cwd()
+        cwd: process.cwd(),
+        files: readdirSync(process.cwd())
       });
     }
     
