@@ -1,3 +1,3 @@
 # FortiGate Specs Lookup
-V1 - **DEMO Fortigate specs lookup with searchbar and export option
-   - wip: complete database, manual checks
+V1.2 - **DEMO Fortigate specs lookup with RFP and comparisation export options
+   - wip: more devices
