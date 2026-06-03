@@ -51,16 +51,14 @@ function App() {
       'firewall_throughput_1518_gbps',
       'ngfw_throughput_gbps',
       'threat_protection_gbps',
+      'ips_throughput_gbps',
+      'ipsec_vpn_throughput_gbps',
+      'ssl_inspection_throughput_gbps',
       'concurrent_sessions',
       'new_sessions_per_sec',
-      'ips_throughput_gbps',
-      'av_throughput_gbps',
-      'ipsec_vpn_throughput_gbps',
-      'ssl_proxy_throughput_gbps',
-      'virtual_systems_max',
-      'ssl_vpn_users_max',
       'gateway_to_gateway_vpn',
-      'firewall_policy_max'
+      'client_to_gateway_tunnels',
+      'virtual_systems_max'
     ];
 
     return deviceList.filter(device => {
@@ -322,8 +320,8 @@ function App() {
                   <span className="spec-value">{selectedDevice.threat_protection_gbps || 'N/A'} <span className="unit">Gbps</span></span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">AV Throughput</span>
-                  <span className="spec-value">{selectedDevice.av_throughput_gbps || 'N/A'} <span className="unit">Gbps</span></span>
+                  <span className="spec-label">SSL Inspection Throughput</span>
+                  <span className="spec-value">{selectedDevice.ssl_inspection_throughput_gbps || 'N/A'} <span className="unit">Gbps</span></span>
                 </div>
               </div>
             </div>
@@ -338,12 +336,12 @@ function App() {
                   <span className="spec-value">{selectedDevice.ipsec_vpn_throughput_gbps || 'N/A'} <span className="unit">Gbps</span></span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">Gateway-to-Gateway VPN</span>
+                  <span className="spec-label">Gateway-to-Gateway Tunnels</span>
                   <span className="spec-value">{formatNumber(selectedDevice.gateway_to_gateway_vpn)} <span className="unit">tunnels</span></span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">SSL VPN Users (Max)</span>
-                  <span className="spec-value">{formatNumber(selectedDevice.ssl_vpn_users_max)} <span className="unit">users</span></span>
+                  <span className="spec-label">Client-to-Gateway Tunnels</span>
+                  <span className="spec-value">{formatNumber(selectedDevice.client_to_gateway_tunnels)} <span className="unit">tunnels</span></span>
                 </div>
               </div>
             </div>
@@ -362,8 +360,8 @@ function App() {
                   <span className="spec-value">{formatNumber(selectedDevice.new_sessions_per_sec)}</span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">Firewall Policies (Max)</span>
-                  <span className="spec-value">{formatNumber(selectedDevice.firewall_policy_max)}</span>
+                  <span className="spec-label">SSL Insp. Concurrent Sessions</span>
+                  <span className="spec-value">{formatNumber(selectedDevice.ssl_inspection_concurrent_sessions)}</span>
                 </div>
               </div>
             </div>
@@ -394,24 +392,20 @@ function App() {
                   <span className="spec-value">{selectedDevice.ge_rj45_ports || 'N/A'}</span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">GE SFP+ Ports</span>
-                  <span className="spec-value">{selectedDevice.ge_sfp_ports || 'N/A'}</span>
-                </div>
-                <div className="spec-row">
-                  <span className="spec-label">SFP 28 Ports</span>
-                  <span className="spec-value">{selectedDevice.sfp28_ports || 'N/A'}</span>
-                </div>
-                <div className="spec-row">
-                  <span className="spec-label">QSFP 28 Ports</span>
-                  <span className="spec-value">{selectedDevice.qsfp28_ports || 'N/A'}</span>
-                </div>
-                <div className="spec-row">
                   <span className="spec-label">WAN Ports</span>
                   <span className="spec-value">{selectedDevice.wan_ports || 'N/A'}</span>
                 </div>
                 <div className="spec-row">
-                  <span className="spec-label">DMZ Ports</span>
-                  <span className="spec-value">{selectedDevice.dmz_ports || 'N/A'}</span>
+                  <span className="spec-label">FortiLink Port</span>
+                  <span className="spec-value">{selectedDevice.fortilink_ports || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">Console Port (RJ45)</span>
+                  <span className="spec-value">{selectedDevice.console_ports || 'N/A'}</span>
+                </div>
+                <div className="spec-row">
+                  <span className="spec-label">USB Port</span>
+                  <span className="spec-value">{selectedDevice.usb_ports || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -425,6 +419,50 @@ function App() {
               <p style={{ color: '#9ca3af', fontSize: '0.875rem', lineHeight: '1.6' }}>
                 {selectedDevice.interface_raw}
               </p>
+            </div>
+          )}
+
+          {(selectedDevice.release_year || selectedDevice.datasheet_date || selectedDevice.datasheet_url) && (
+            <div className="spec-card" style={{ marginTop: '1.5rem' }}>
+              <div className="spec-card-header">
+                <FileText size={16} />
+                <h3>Source &amp; Lifecycle</h3>
+              </div>
+              <div>
+                {selectedDevice.release_year && (
+                  <div className="spec-row">
+                    <span className="spec-label">Release Year</span>
+                    <span className="spec-value">{selectedDevice.release_year}</span>
+                  </div>
+                )}
+                {selectedDevice.support_years && (
+                  <div className="spec-row">
+                    <span className="spec-label">Support Years</span>
+                    <span className="spec-value">{selectedDevice.support_years}</span>
+                  </div>
+                )}
+                {selectedDevice.datasheet_date && (
+                  <div className="spec-row">
+                    <span className="spec-label">Datasheet Date</span>
+                    <span className="spec-value">{selectedDevice.datasheet_date}</span>
+                  </div>
+                )}
+                {selectedDevice.datasheet_url && (
+                  <div className="spec-row">
+                    <span className="spec-label">Datasheet</span>
+                    <span className="spec-value">
+                      <a
+                        href={selectedDevice.datasheet_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#10b981', textDecoration: 'underline', wordBreak: 'break-all' }}
+                      >
+                        View source
+                      </a>
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

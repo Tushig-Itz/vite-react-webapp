@@ -1,441 +1,330 @@
 import ExcelJS from 'exceljs';
 
-// RFP Match Export: Simple side-by-side (no comparison)
-export const exportRfpMatch = async (device, formatNumber, rfpRequirements = {}) => {
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+const THIN_BORDER = {
+    top: { style: 'thin' },
+    bottom: { style: 'thin' },
+    left: { style: 'thin' },
+    right: { style: 'thin' },
+};
+
+// Format a number with thousands separators; returns '' for empty values.
+const fmtNum = (formatNumber, v) => {
+    if (v === null || v === undefined || v === '') return '';
+    const r = formatNumber(v);
+    return r === 'N/A' ? '' : r;
+};
+
+const has = (v) => v !== null && v !== undefined && String(v).trim() !== '';
+
+// ---------------------------------------------------------------------------
+// Company RFP template spec lines (order MUST match the company template)
+// Each entry returns the value portion (without the label) for a device,
+// or '' when the device has no data for that line.
+// ---------------------------------------------------------------------------
+const buildRfpSpecLines = (device, formatNumber) => {
+    const d = device;
+    const g = (v, unit) => (has(v) ? `${v} ${unit}` : '');
+
+    const fwCombined = () => {
+        const a = d.firewall_throughput_1518_gbps;
+        const b = d.firewall_throughput_512_gbps;
+        const c = d.firewall_throughput_64_gbps;
+        if (!has(a) && !has(b) && !has(c)) return '';
+        return `${has(a) ? a : '-'} / ${has(b) ? b : '-'} / ${has(c) ? c : '-'} Gbps`;
+    };
+
+    const pair = (x, y) => {
+        if (!has(x) && !has(y)) return '';
+        return `${has(x) ? x : '-'} / ${has(y) ? y : '-'}`;
+    };
+
+    const lines = [
+        ['IPS Throughput', g(d.ips_throughput_gbps, 'Gbps')],
+        ['NGFW Throughput', g(d.ngfw_throughput_gbps, 'Gbps')],
+        ['Threat Protection Throughput', g(d.threat_protection_gbps, 'Gbps')],
+        ['Firewall Throughput (1518/512/64 byte)', fwCombined()],
+        ['Firewall Latency (64 byte UDP)', g(d.firewall_latency_us, 'µs')],
+        ['Firewall Throughput (Packets Per Second)', g(d.firewall_throughput_mpps, 'Mpps')],
+        ['Concurrent Sessions (TCP)', fmtNum(formatNumber, d.concurrent_sessions)],
+        ['New Sessions/Second (TCP)', fmtNum(formatNumber, d.new_sessions_per_sec)],
+        ['IPsec VPN Throughput (512 byte)', g(d.ipsec_vpn_throughput_gbps, 'Gbps')],
+        ['Gateway-to-Gateway IPsec Tunnels', fmtNum(formatNumber, d.gateway_to_gateway_vpn)],
+        ['Client-to-Gateway IPsec Tunnels', fmtNum(formatNumber, d.client_to_gateway_tunnels)],
+        ['SSL Inspection Throughput (IPS, avg. HTTPS)', g(d.ssl_inspection_throughput_gbps, 'Gbps')],
+        ['SSL Inspection CPS (IPS, avg. HTTPS)', fmtNum(formatNumber, d.ssl_inspection_cps)],
+        ['SSL Inspection Concurrent Sessions (IPS, avg. HTTPS)', fmtNum(formatNumber, d.ssl_inspection_concurrent_sessions)],
+        ['Virtual Domains (Default / Maximum)', pair(d.virtual_systems_default, d.virtual_systems_max)],
+        ['Hardware Accelerated GE WAN Ports', has(d.wan_ports) ? `${d.wan_ports}` : ''],
+        ['Hardware Accelerated GE RJ45 Ports', has(d.ge_rj45_ports) ? `${d.ge_rj45_ports}` : ''],
+        ['GE RJ45 FortiLink Port (Default)', has(d.fortilink_ports) ? `${d.fortilink_ports}` : ''],
+        ['Console Port (RJ45)', has(d.console_ports) ? `${d.console_ports}` : ''],
+        ['USB Port', has(d.usb_ports) ? `${d.usb_ports}` : ''],
+    ];
+
+    // "Label: value" — keep the line even when value is blank so layout matches the template exactly.
+    return lines.map(([label, value]) => `${label}:${value ? ' ' + value : ''}`).join('\n');
+};
+
+const triggerDownload = async (workbook, filename) => {
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+// ---------------------------------------------------------------------------
+// RFP Match Export — company template format
+// Single "Firewall" block: 2 rows, A/B/C merged across both rows, D = Qty.
+// ---------------------------------------------------------------------------
+export const exportRfpMatch = async (device, formatNumber, rfpRequirements = {}, options = {}) => {
     try {
+        const { itemNumber = 1, quantity = '', label = 'Firewall' } = options;
+
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(device.model);
 
-        // column widths - 3 columns only
-        worksheet.columns = [
-            { width: 30 },
-            { width: 25 },
-            { width: 25 }
-        ];
+        // Column widths matching the company template
+        worksheet.getColumn(1).width = 4.8;   // №
+        worksheet.getColumn(2).width = 12.2;  // Description
+        worksheet.getColumn(3).width = 74.5;  // Technical specification
+        worksheet.getColumn(4).width = 8;     // Qty
 
-        // title
-        const titleRow = worksheet.addRow(['FortiGate RFP Match']);
-        titleRow.font = { size: 16, bold: true, color: { argb: 'FF10B981' } };
-        titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
-        worksheet.mergeCells('A1:C1');
-        worksheet.addRow([]);
+        // --- Header row ---
+        const headerRow = worksheet.addRow(['№', 'Description', 'Technical specification', '']);
+        headerRow.font = { name: 'Arial', size: 10, bold: true };
+        headerRow.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        for (let i = 1; i <= 4; i++) headerRow.getCell(i).border = THIN_BORDER;
 
-        // header 
-        const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн шаардлага', device.model]);
-        headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
-        headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+        // --- Firewall block: two rows (rows 2 and 3) ---
+        const specText = buildRfpSpecLines(device, formatNumber);
 
-        for (let i = 1; i <= 3; i++) {
-            headerRow.getCell(i).fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF10B981' }
-            };
-            headerRow.getCell(i).border = {
-                top: { style: 'thin' },
-                bottom: { style: 'thick' },
-                left: { style: 'thin' },
-                right: { style: 'thin' }
-            };
+        const topRow = worksheet.addRow([itemNumber, label, specText, 'Qty']);
+        const bottomRow = worksheet.addRow(['', '', '', quantity]);
+        const topNum = topRow.number;       // 2
+        const bottomNum = bottomRow.number; // 3
+
+        // Merge A, B, C across the two rows
+        worksheet.mergeCells(`A${topNum}:A${bottomNum}`);
+        worksheet.mergeCells(`B${topNum}:B${bottomNum}`);
+        worksheet.mergeCells(`C${topNum}:C${bottomNum}`);
+
+        // № cell
+        const numCell = worksheet.getCell(`A${topNum}`);
+        numCell.font = { name: 'Times New Roman', size: 9 };
+        numCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Description (Firewall) cell
+        const descCell = worksheet.getCell(`B${topNum}`);
+        descCell.font = { name: 'Times New Roman', size: 9 };
+        descCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+        // Technical specification cell — all specs, one cell, line breaks between
+        const specCell = worksheet.getCell(`C${topNum}`);
+        specCell.font = { name: 'Times New Roman', size: 9 };
+        specCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+
+        // Qty label + value (D column)
+        const qtyLabelCell = worksheet.getCell(`D${topNum}`);
+        qtyLabelCell.value = 'Qty';
+        qtyLabelCell.font = { name: 'Times New Roman', size: 9, bold: true };
+        qtyLabelCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        const qtyValueCell = worksheet.getCell(`D${bottomNum}`);
+        qtyValueCell.font = { name: 'Times New Roman', size: 9 };
+        qtyValueCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // Borders on every cell of the block
+        for (const r of [topNum, bottomNum]) {
+            for (let i = 1; i <= 4; i++) worksheet.getRow(r).getCell(i).border = THIN_BORDER;
         }
 
-        const addRow = (label, reqValue, deviceValue) => {
-            const row = worksheet.addRow([label, reqValue || '-', deviceValue || 'N/A']);
-            row.alignment = { horizontal: 'center', vertical: 'middle' };
-            for (let i = 1; i <= 3; i++) {
-                row.getCell(i).border = {
-                    top: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-            }
-            row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-            row.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
-        };
+        // Row heights — second row carries the tall merged spec cell
+        const lineCount = specText.split('\n').length;
+        topRow.height = 14;
+        bottomRow.height = Math.max(40, lineCount * 13);
 
-        // Add specs in order
-        addRow('Firewall Throughput (1518 Byte UDP)', 
-               rfpRequirements.firewall_throughput_1518_gbps, 
-               device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : null);
-        
-        addRow('NGFW Throughput', 
-               rfpRequirements.ngfw_throughput_gbps, 
-               device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : null);
-        
-        addRow('Threat Protection Throughput', 
-               rfpRequirements.threat_protection_gbps, 
-               device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : null);
-        
-        addRow('Concurrent Sessions (TCP)', 
-               rfpRequirements.concurrent_sessions ? formatNumber(rfpRequirements.concurrent_sessions) : '', 
-               device.concurrent_sessions ? formatNumber(device.concurrent_sessions) : null);
-        
-        addRow('New Session/Second (TCP)', 
-               rfpRequirements.new_sessions_per_sec ? formatNumber(rfpRequirements.new_sessions_per_sec) : '', 
-               device.new_sessions_per_sec ? formatNumber(device.new_sessions_per_sec) : null);
-        
-        addRow('IPS Throughput', 
-               rfpRequirements.ips_throughput_gbps, 
-               device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : null);
-        
-        addRow('AV Throughput (HTTP)', 
-               rfpRequirements.av_throughput_gbps, 
-               device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : null);
-        
-        addRow('IPsec VPN Throughput', 
-               rfpRequirements.ipsec_vpn_throughput_gbps, 
-               device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : null);
-        
-        addRow('SSL Proxy Throughput', 
-               rfpRequirements.ssl_proxy_throughput_gbps, 
-               device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : null);
-        
-        addRow('Virtual Systems (Max)', 
-               rfpRequirements.virtual_systems_max, 
-               device.virtual_systems_max);
-        
-        addRow('SSL VPN Users (Max)', 
-               rfpRequirements.ssl_vpn_users_max, 
-               device.ssl_vpn_users_max);
-        
-        addRow('Gateway-to-Gateway VPN', 
-               rfpRequirements.gateway_to_gateway_vpn, 
-               device.gateway_to_gateway_vpn);
-        
-        addRow('Firewall Policy (Max)', 
-               rfpRequirements.firewall_policy_max ? formatNumber(rfpRequirements.firewall_policy_max) : '', 
-               device.firewall_policy_max ? formatNumber(device.firewall_policy_max) : null);
-
-        // Interface row
-        if (device.interface_raw) {
-            const intRow = worksheet.addRow(['Interface', '-', device.interface_raw]);
-            const lines = Math.ceil(device.interface_raw.length / 50);
-            intRow.height = Math.max(40, lines * 15);
-            intRow.getCell(1).alignment = { vertical: 'middle' };
-            intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-            intRow.getCell(3).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
-            for (let i = 1; i <= 3; i++) {
-                intRow.getCell(i).border = {
-                    top: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-            }
-        }
-
-        // Download
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `FortiGate_RFP_${device.model}_${new Date().toISOString().split('T')[0]}.xlsx`;
-        a.click();
-        URL.revokeObjectURL(url);
+        await triggerDownload(
+            workbook,
+            `RFP_${device.model}_${new Date().toISOString().split('T')[0]}.xlsx`
+        );
     } catch (error) {
         console.error('Export error:', error);
         throw error;
     }
 };
 
+// ---------------------------------------------------------------------------
+// Spec definitions shared by the comparison exports
+// ---------------------------------------------------------------------------
+const COMPARISON_SPECS = [
+    { label: 'Firewall Throughput', key: 'firewall_throughput_1518_gbps', unit: 'Gbps' },
+    { label: 'NGFW Throughput', key: 'ngfw_throughput_gbps', unit: 'Gbps' },
+    { label: 'Threat Protection Throughput', key: 'threat_protection_gbps', unit: 'Gbps' },
+    { label: 'IPS Throughput', key: 'ips_throughput_gbps', unit: 'Gbps' },
+    { label: 'IPsec VPN Throughput', key: 'ipsec_vpn_throughput_gbps', unit: 'Gbps' },
+    { label: 'SSL Inspection Throughput', key: 'ssl_inspection_throughput_gbps', unit: 'Gbps' },
+    { label: 'Concurrent Sessions (TCP)', key: 'concurrent_sessions', count: true },
+    { label: 'New Session/Second (TCP)', key: 'new_sessions_per_sec', count: true },
+    { label: 'Gateway-to-Gateway Tunnels', key: 'gateway_to_gateway_vpn', count: true },
+    { label: 'Client-to-Gateway Tunnels', key: 'client_to_gateway_tunnels', count: true },
+    { label: 'Virtual Domains (Max)', key: 'virtual_systems_max', count: true },
+];
+
+const specDisplayValue = (device, spec, formatNumber) => {
+    const v = device[spec.key];
+    if (!has(v)) return 'N/A';
+    if (spec.count) return fmtNum(formatNumber, v) || 'N/A';
+    return `${v} ${spec.unit}`;
+};
+
+// ---------------------------------------------------------------------------
 // Mode 1: Single model with RFP comparison
+// ---------------------------------------------------------------------------
 export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements = {}) => {
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(device.model);
 
-        // column widths
-        worksheet.columns = [
-            { width: 30 },
-            { width: 25 },
-            { width: 25 },
-            { width: 15 }
-        ];
+        worksheet.columns = [{ width: 32 }, { width: 25 }, { width: 25 }, { width: 15 }];
 
-        // title
         const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
         titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
         titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
         worksheet.mergeCells('A1:D1');
         worksheet.addRow([]);
 
-        // header 
         const headerRow = worksheet.addRow(['Үзүүлэлтүүд', 'Харилцагчийн үзүүлэлт', device.model, 'Харьцуулалт']);
         headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
         headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
-
         for (let i = 1; i <= 4; i++) {
-            headerRow.getCell(i).fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF3B82F6' }
-            };
-            headerRow.getCell(i).border = {
-                top: { style: 'thin' },
-                bottom: { style: 'thick' },
-                left: { style: 'thin' },
-                right: { style: 'thin' }
-            };
+            headerRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+            headerRow.getCell(i).border = { ...THIN_BORDER, bottom: { style: 'thick' } };
         }
 
-        // Helper function to add row with RFP value
-        const addRow = (label, rfpKey, value, unit = '', useFormula = false) => {
-            const customerValue = rfpRequirements[rfpKey] || '';
-            const displayCustomerValue = customerValue ? `${customerValue}${unit ? ' ' + unit : ''}` : '';
-            const displayDeviceValue = value || 'N/A';
-            
-            const row = worksheet.addRow([label, displayCustomerValue, displayDeviceValue, '']);
+        const addRow = (spec) => {
+            const customerValue = rfpRequirements[spec.key] || '';
+            const displayCustomer = customerValue ? `${customerValue}${spec.unit ? ' ' + spec.unit : ''}` : '';
+            const displayDevice = specDisplayValue(device, spec, formatNumber);
+
+            const row = worksheet.addRow([spec.label, displayCustomer, displayDevice, '']);
             const rowNum = row.number;
             row.font = { size: 11 };
             row.height = 25;
-
-            for (let i = 1; i <= 4; i++) {
-                row.getCell(i).border = {
-                    top: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-            }
-
+            for (let i = 1; i <= 4; i++) row.getCell(i).border = THIN_BORDER;
             row.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-            row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-            row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
-            row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
+            for (let i = 2; i <= 4; i++) row.getCell(i).alignment = { horizontal: 'center', vertical: 'middle' };
 
-            if (useFormula && customerValue) {
+            if (customerValue) {
                 row.getCell(4).value = {
-                    formula: `=IF(OR(B${rowNum}="",ISBLANK(B${rowNum})),"",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)>IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"More",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)=IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"Same","Less")))`
+                    formula: `=IF(OR(B${rowNum}="",ISBLANK(B${rowNum})),"",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)>IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"More",IF(IFERROR(VALUE(LEFT(TRIM(C${rowNum}),FIND(" ",TRIM(C${rowNum})&" ")-1)),0)=IFERROR(VALUE(LEFT(TRIM(B${rowNum}),FIND(" ",TRIM(B${rowNum})&" ")-1)),0),"Same","Less")))`,
                 };
             }
         };
 
-        // raw interface row
         if (device.interface_raw) {
             const intRow = worksheet.addRow(['Interface', '', device.interface_raw, '']);
-            // Dynamic height based on content length (roughly 15 chars per line)
             const lines = Math.ceil(device.interface_raw.length / 50);
             intRow.height = Math.max(40, lines * 15);
             intRow.getCell(1).alignment = { vertical: 'middle' };
             intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
             intRow.getCell(3).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
-            for (let i = 1; i <= 4; i++) {
-                intRow.getCell(i).border = {
-                    top: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-            }
+            for (let i = 1; i <= 4; i++) intRow.getCell(i).border = THIN_BORDER;
         }
 
-        // specs with RFP keys matching the modal
-        addRow('Firewall Throughput', 'firewall_throughput_1518_gbps', 
-            device.firewall_throughput_1518_gbps ? `${device.firewall_throughput_1518_gbps} Gbps` : 'N/A', 'Gbps', true);
-        addRow('NGFW Throughput', 'ngfw_throughput_gbps', 
-            device.ngfw_throughput_gbps ? `${device.ngfw_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
-        addRow('Threat Protection Throughput', 'threat_protection_gbps', 
-            device.threat_protection_gbps ? `${device.threat_protection_gbps} Gbps` : 'N/A', 'Gbps', true);
-        addRow('Concurrent Sessions (TCP)', 'concurrent_sessions', 
-            formatNumber(device.concurrent_sessions), '', true);
-        addRow('New Session/Second (TCP)', 'new_sessions_per_sec', 
-            formatNumber(device.new_sessions_per_sec), '', true);
-        addRow('IPS Throughput', 'ips_throughput_gbps', 
-            device.ips_throughput_gbps ? `${device.ips_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
-        addRow('AV Throughput', 'av_throughput_gbps', 
-            device.av_throughput_gbps ? `${device.av_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
-        addRow('IPsec VPN Throughput', 'ipsec_vpn_throughput_gbps', 
-            device.ipsec_vpn_throughput_gbps ? `${device.ipsec_vpn_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
-        addRow('SSL Proxy Throughput', 'ssl_proxy_throughput_gbps', 
-            device.ssl_proxy_throughput_gbps ? `${device.ssl_proxy_throughput_gbps} Gbps` : 'N/A', 'Gbps', true);
-        addRow('Virtual Systems (Max)', 'virtual_systems_max', 
-            `${device.virtual_systems_max || 0}`, '', true);
-        addRow('SSL VPN Users (Max)', 'ssl_vpn_users_max', 
-            device.ssl_vpn_users_max ? `${device.ssl_vpn_users_max}` : 'N/A', '', true);
-        addRow('Gateway-to-Gateway VPN', 'gateway_to_gateway_vpn', 
-            device.gateway_to_gateway_vpn || 'N/A', '', true);
-        addRow('Firewall Policy', 'firewall_policy_max', 
-            formatNumber(device.firewall_policy_max), '', true);
+        COMPARISON_SPECS.forEach(addRow);
 
-        if (device.release_year) {
-            addRow('Release Year', '', device.release_year);
-        }
-        if (device.support_years) {
-            addRow('Support Years', '', `${device.support_years} years`);
-        }
+        if (device.release_year) addRow({ label: 'Release Year', key: 'release_year' });
+        if (device.support_years) addRow({ label: 'Support Years', key: 'support_years' });
 
-        // generate
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-
-        const timestamp = new Date().toISOString().split('T')[0];
-        link.download = `FortiGate_${device.model}_RFP_${timestamp}.xlsx`;
-
-        link.click();
-        window.URL.revokeObjectURL(url);
-
+        await triggerDownload(
+            workbook,
+            `FortiGate_${device.model}_RFP_${new Date().toISOString().split('T')[0]}.xlsx`
+        );
     } catch (error) {
         console.error('Export error:', error);
         throw error;
     }
 };
 
-// Mode 2: Multiple models comparison (no RFP, no comparison column)
+// ---------------------------------------------------------------------------
+// Mode 2: Multiple models comparison (no RFP)
+// ---------------------------------------------------------------------------
 export const exportMultipleModels = async (devices, formatNumber) => {
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Comparison');
 
-        // Dynamic column widths based on number of devices
-        const columns = [{ width: 30 }]; // First column for spec names
-        for (let i = 0; i < devices.length; i++) {
-            columns.push({ width: 25 }); // One column per device
-        }
+        const columns = [{ width: 32 }];
+        for (let i = 0; i < devices.length; i++) columns.push({ width: 25 });
         worksheet.columns = columns;
 
-        // Title
         const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
         titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
         titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
         worksheet.mergeCells(1, 1, 1, devices.length + 1);
         worksheet.addRow([]);
 
-        // Header with model names
-        const headerData = ['Үзүүлэлтүүд', ...devices.map(d => d.model)];
-        const headerRow = worksheet.addRow(headerData);
+        const headerRow = worksheet.addRow(['Үзүүлэлтүүд', ...devices.map(d => d.model)]);
         headerRow.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
         headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
-
         for (let i = 1; i <= devices.length + 1; i++) {
-            headerRow.getCell(i).fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FF3B82F6' }
-            };
-            headerRow.getCell(i).border = {
-                top: { style: 'thin' },
-                bottom: { style: 'thick' },
-                left: { style: 'thin' },
-                right: { style: 'thin' }
-            };
+            headerRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+            headerRow.getCell(i).border = { ...THIN_BORDER, bottom: { style: 'thick' } };
         }
 
-        // Helper function to add comparison row
         const addComparisonRow = (label, getValue) => {
-            const rowData = [label, ...devices.map(device => getValue(device) || 'N/A')];
-            const row = worksheet.addRow(rowData);
+            const row = worksheet.addRow([label, ...devices.map(d => getValue(d) || 'N/A')]);
             row.font = { size: 11 };
             row.height = 25;
-
             for (let i = 1; i <= devices.length + 1; i++) {
-                row.getCell(i).border = {
-                    top: { style: 'thin' },
-                    bottom: { style: 'thin' },
-                    left: { style: 'thin' },
-                    right: { style: 'thin' }
-                };
-                if (i === 1) {
-                    row.getCell(i).font = { size: 11, color: { argb: 'FF6B7280' } };
-                } else {
-                    row.getCell(i).alignment = { horizontal: 'center', vertical: 'middle' };
-                }
+                row.getCell(i).border = THIN_BORDER;
+                if (i === 1) row.getCell(i).font = { size: 11, color: { argb: 'FF6B7280' } };
+                else row.getCell(i).alignment = { horizontal: 'center', vertical: 'middle' };
             }
         };
 
-        // Interface row - special handling for multi-line content
-        const interfaceData = ['Interface', ...devices.map(d => d.interface_raw || 'N/A')];
-        const intRow = worksheet.addRow(interfaceData);
-        
-        // Calculate dynamic height based on longest interface description
+        // Interface row (multi-line)
+        const intRow = worksheet.addRow(['Interface', ...devices.map(d => d.interface_raw || 'N/A')]);
         const maxLength = Math.max(...devices.map(d => (d.interface_raw || '').length));
-        const lines = Math.ceil(maxLength / 50);
-        intRow.height = Math.max(40, lines * 15);
-        
+        intRow.height = Math.max(40, Math.ceil(maxLength / 50) * 15);
         intRow.getCell(1).alignment = { vertical: 'middle' };
         intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-        
-        for (let i = 2; i <= devices.length + 1; i++) {
-            intRow.getCell(i).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
-            intRow.getCell(i).border = {
-                top: { style: 'thin' },
-                bottom: { style: 'thin' },
-                left: { style: 'thin' },
-                right: { style: 'thin' }
-            };
+        for (let i = 1; i <= devices.length + 1; i++) {
+            intRow.getCell(i).border = THIN_BORDER;
+            if (i >= 2) intRow.getCell(i).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
         }
-        intRow.getCell(1).border = {
-            top: { style: 'thin' },
-            bottom: { style: 'thin' },
-            left: { style: 'thin' },
-            right: { style: 'thin' }
-        };
 
-        // Add all specs
-        addComparisonRow('Firewall Throughput', d => 
-            d.firewall_throughput_1518_gbps ? `${d.firewall_throughput_1518_gbps} Gbps` : 'N/A');
-        addComparisonRow('NGFW Throughput', d => 
-            d.ngfw_throughput_gbps ? `${d.ngfw_throughput_gbps} Gbps` : 'N/A');
-        addComparisonRow('Threat Protection Throughput', d => 
-            d.threat_protection_gbps ? `${d.threat_protection_gbps} Gbps` : 'N/A');
-        addComparisonRow('Concurrent Sessions (TCP)', d => 
-            formatNumber(d.concurrent_sessions));
-        addComparisonRow('New Session/Second (TCP)', d => 
-            formatNumber(d.new_sessions_per_sec));
-        addComparisonRow('IPS Throughput', d => 
-            d.ips_throughput_gbps ? `${d.ips_throughput_gbps} Gbps` : 'N/A');
-        addComparisonRow('AV Throughput', d => 
-            d.av_throughput_gbps ? `${d.av_throughput_gbps} Gbps` : 'N/A');
-        addComparisonRow('IPsec VPN Throughput', d => 
-            d.ipsec_vpn_throughput_gbps ? `${d.ipsec_vpn_throughput_gbps} Gbps` : 'N/A');
-        addComparisonRow('SSL Proxy Throughput', d => 
-            d.ssl_proxy_throughput_gbps ? `${d.ssl_proxy_throughput_gbps} Gbps` : 'N/A');
-        addComparisonRow('Virtual Systems (Max)', d => 
-            `${d.virtual_systems_max || 0}`);
-        addComparisonRow('SSL VPN Users (Max)', d => 
-            d.ssl_vpn_users_max ? `${d.ssl_vpn_users_max}` : 'N/A');
-        addComparisonRow('Gateway-to-Gateway VPN', d => 
-            d.gateway_to_gateway_vpn || 'N/A');
-        addComparisonRow('Firewall Policy', d => 
-            formatNumber(d.firewall_policy_max));
+        COMPARISON_SPECS.forEach(spec =>
+            addComparisonRow(spec.label, d => specDisplayValue(d, spec, formatNumber))
+        );
 
-        // Only add these rows if at least one device has the value
         if (devices.some(d => d.release_year)) {
             addComparisonRow('Release Year', d => d.release_year || 'N/A');
         }
         if (devices.some(d => d.support_years)) {
-            addComparisonRow('Support Years', d => 
-                d.support_years ? `${d.support_years} years` : 'N/A');
+            addComparisonRow('Support Years', d => (d.support_years ? `${d.support_years} years` : 'N/A'));
         }
 
-        // Generate
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-
-        const timestamp = new Date().toISOString().split('T')[0];
-        link.download = `FortiGate_Comparison_${timestamp}.xlsx`;
-
-        link.click();
-        window.URL.revokeObjectURL(url);
-
+        await triggerDownload(
+            workbook,
+            `FortiGate_Comparison_${new Date().toISOString().split('T')[0]}.xlsx`
+        );
     } catch (error) {
         console.error('Export error:', error);
         throw error;
     }
 };
 
-// Legacy export for backward compatibility (Mode 1 without RFP)
+// Legacy export for backward compatibility
 export const exportDeviceToExcel = async (device, formatNumber) => {
     return exportSingleWithRFP(device, formatNumber, {});
 };
