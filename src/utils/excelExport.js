@@ -362,7 +362,3 @@ export const exportMultipleModels = async (devices, formatNumber) => {
     }
 };
 
-// Legacy export for backward compatibility
-export const exportDeviceToExcel = async (device, formatNumber) => {
-    return exportSingleWithRFP(device, formatNumber, {});
-};
