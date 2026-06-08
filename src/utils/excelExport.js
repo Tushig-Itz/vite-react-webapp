@@ -1,4 +1,8 @@
 import ExcelJS from 'exceljs';
+import {
+    GENERAL_REQUIREMENTS,
+    GENERAL_REQUIREMENTS_LABEL,
+} from './rfpBoilerplate.js';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -9,6 +13,18 @@ const THIN_BORDER = {
     bottom: { style: 'thin' },
     left: { style: 'thin' },
     right: { style: 'thin' },
+};
+
+// Header fill — matches the company baseline (Accent 1, Lighter 60% = theme 4 / 0.6 tint).
+const HEADER_FILL = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB4C6E7' } };
+
+// Estimate wrapped line count for a cell so we can size rows with comfortable spacing.
+const estimateLines = (text, charsPerLine = 88) => {
+    if (!text) return 1;
+    return String(text).split('\n').reduce(
+        (sum, seg) => sum + Math.max(1, Math.ceil(seg.length / charsPerLine)),
+        0
+    );
 };
 
 // Format a number with thousands separators; returns '' for empty values.
@@ -22,8 +38,6 @@ const has = (v) => v !== null && v !== undefined && String(v).trim() !== '';
 
 // ---------------------------------------------------------------------------
 // Company RFP template spec lines (order MUST match the company template)
-// Each entry returns the value portion (without the label) for a device,
-// or '' when the device has no data for that line.
 // ---------------------------------------------------------------------------
 const buildRfpSpecLines = (device, formatNumber) => {
     const d = device;
@@ -65,7 +79,6 @@ const buildRfpSpecLines = (device, formatNumber) => {
         ['USB Port', has(d.usb_ports) ? `${d.usb_ports}` : ''],
     ];
 
-    // "Label: value" — keep the line even when value is blank so layout matches the template exactly.
     return lines.map(([label, value]) => `${label}:${value ? ' ' + value : ''}`).join('\n');
 };
 
@@ -84,70 +97,96 @@ const triggerDownload = async (workbook, filename) => {
 
 // ---------------------------------------------------------------------------
 // RFP Match Export — company template format
-// Single "Firewall" block: 2 rows, A/B/C merged across both rows, D = Qty.
 // ---------------------------------------------------------------------------
 export const exportRfpMatch = async (device, formatNumber, rfpRequirements = {}, options = {}) => {
     try {
-        const { itemNumber = 1, quantity = '', label = 'Firewall' } = options;
+        const {
+            quantity = '',
+            label = 'Firewall',
+            includeGeneralRequirements = true,
+        } = options;
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(device.model);
 
         // Column widths matching the company template
-        worksheet.getColumn(1).width = 4.8;   // №
-        worksheet.getColumn(2).width = 12.2;  // Description
-        worksheet.getColumn(3).width = 74.5;  // Technical specification
-        worksheet.getColumn(4).width = 8;     // Qty
+        worksheet.getColumn(1).width = 4.8;
+        worksheet.getColumn(2).width = 12.2;
+        worksheet.getColumn(3).width = 74.5;
+        worksheet.getColumn(4).width = 8;
 
-        // --- Header row ---
+        // --- Header row (filled like the baseline; D1 has no fill or border) ---
         const headerRow = worksheet.addRow(['№', 'Description', 'Technical specification', '']);
         headerRow.font = { name: 'Arial', size: 10, bold: true };
         headerRow.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        for (let i = 1; i <= 4; i++) headerRow.getCell(i).border = THIN_BORDER;
+        for (let i = 1; i <= 3; i++) {
+            headerRow.getCell(i).border = THIN_BORDER;
+            headerRow.getCell(i).fill = HEADER_FILL;
+        }
 
-        // --- Firewall block: two rows (rows 2 and 3) ---
+        // --- Item 1: Ерөнхий шаардлага (general requirements) — baseline placeholder ---
+        let itemNumber = 1;
+        if (includeGeneralRequirements && GENERAL_REQUIREMENTS.length) {
+            const firstReqRow = worksheet.rowCount + 1;
+            GENERAL_REQUIREMENTS.forEach((reqText, i) => {
+                const r = worksheet.addRow([i === 0 ? 1 : '', i === 0 ? GENERAL_REQUIREMENTS_LABEL : '', reqText, '']);
+                r.height = estimateLines(reqText) * 16 + 20;
+                for (let c = 1; c <= 3; c++) r.getCell(c).border = THIN_BORDER;
+            });
+            const lastReqRow = worksheet.rowCount;
+            worksheet.mergeCells(`A${firstReqRow}:A${lastReqRow}`);
+            worksheet.mergeCells(`B${firstReqRow}:B${lastReqRow}`);
+
+            const grNum = worksheet.getCell(`A${firstReqRow}`);
+            grNum.font = { name: 'Calibri', size: 11 };
+            grNum.alignment = { horizontal: 'center', vertical: 'middle' };
+            const grLabel = worksheet.getCell(`B${firstReqRow}`);
+            grLabel.font = { name: 'Times New Roman', size: 9 };
+            grLabel.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            for (let rr = firstReqRow; rr <= lastReqRow; rr++) {
+                const cCell = worksheet.getCell(`C${rr}`);
+                cCell.font = { name: 'Times New Roman', size: 9 };
+                cCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true, indent: 1 };
+            }
+            itemNumber = 2;
+        }
+
+        // --- Firewall block: two rows, A/B/C merged across both ---
         const specText = buildRfpSpecLines(device, formatNumber);
 
         const topRow = worksheet.addRow([itemNumber, label, specText, 'Qty']);
         const bottomRow = worksheet.addRow(['', '', '', quantity]);
-        const topNum = topRow.number;       // 2
-        const bottomNum = bottomRow.number; // 3
+        const topNum = topRow.number;
+        const bottomNum = bottomRow.number;
 
-        // Merge A, B, C across the two rows
         worksheet.mergeCells(`A${topNum}:A${bottomNum}`);
         worksheet.mergeCells(`B${topNum}:B${bottomNum}`);
         worksheet.mergeCells(`C${topNum}:C${bottomNum}`);
 
-        // № cell
         const numCell = worksheet.getCell(`A${topNum}`);
-        numCell.font = { name: 'Times New Roman', size: 9 };
+        numCell.font = { name: 'Calibri', size: 11 };
         numCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-        // Description (Firewall) cell
         const descCell = worksheet.getCell(`B${topNum}`);
         descCell.font = { name: 'Times New Roman', size: 9 };
         descCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
 
-        // Technical specification cell — all specs, one cell, line breaks between
         const specCell = worksheet.getCell(`C${topNum}`);
         specCell.font = { name: 'Times New Roman', size: 9 };
         specCell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
 
-        // Qty label + value (D column)
         const qtyLabelCell = worksheet.getCell(`D${topNum}`);
         qtyLabelCell.value = 'Qty';
-        qtyLabelCell.font = { name: 'Times New Roman', size: 9, bold: true };
+        qtyLabelCell.font = { name: 'Calibri', size: 11 };
         qtyLabelCell.alignment = { horizontal: 'center', vertical: 'middle' };
         const qtyValueCell = worksheet.getCell(`D${bottomNum}`);
         qtyValueCell.font = { name: 'Times New Roman', size: 9 };
         qtyValueCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-        // Borders on every cell of the block
         for (const r of [topNum, bottomNum]) {
             for (let i = 1; i <= 4; i++) worksheet.getRow(r).getCell(i).border = THIN_BORDER;
         }
 
-        // Row heights — second row carries the tall merged spec cell
         const lineCount = specText.split('\n').length;
         topRow.height = 14;
         bottomRow.height = Math.max(40, lineCount * 13);
@@ -292,7 +331,6 @@ export const exportMultipleModels = async (devices, formatNumber) => {
             }
         };
 
-        // Interface row (multi-line)
         const intRow = worksheet.addRow(['Interface', ...devices.map(d => d.interface_raw || 'N/A')]);
         const maxLength = Math.max(...devices.map(d => (d.interface_raw || '').length));
         intRow.height = Math.max(40, Math.ceil(maxLength / 50) * 15);

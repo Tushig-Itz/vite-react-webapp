@@ -150,6 +150,14 @@ function App() {
     }
   };
 
+  const handleGenerateRfp = async () => {
+    try {
+      await exportRfpMatch(selectedDevice, formatNumber, rfpRequirements);
+    } catch (error) {
+      alert(`RFP generation failed: ${error.message}`);
+    }
+  };
+
   const handleSaveRfp = (requirements) => {
     setRfpRequirements(requirements);
     const hasRequirements = Object.values(requirements).some(val => val !== '');
@@ -264,19 +272,16 @@ function App() {
                   {selectedDevice.vendor} {selectedDevice.family} - {selectedDevice.series} Series
                 </p>
               </div>
-              <button
-                onClick={() => {
-                  if (rfpFilterActive && hasRfpRequirements) {
-                    exportRfpMatch(selectedDevice, formatNumber, rfpRequirements);
-                  } else {
-                    handleExportSingle();
-                  }
-                }}
-                className="export-button"
-              >
-                <Download size={18} />
-                {rfpFilterActive && hasRfpRequirements ? 'Export RFP Match' : 'Export to Excel'}
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button onClick={handleExportSingle} className="export-button">
+                  <Download size={18} />
+                  Export to Excel
+                </button>
+                <button onClick={handleGenerateRfp} className="rfp-button">
+                  <FileText size={18} />
+                  Generate RFP
+                </button>
+              </div>
             </div>
           </div>
 
