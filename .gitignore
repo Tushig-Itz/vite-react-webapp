@@ -38,7 +38,10 @@ __pycache__/
 *.swo
 *~
 
-# AI agent session state
+# AI agent context / session state (local only — project docs live in README.md
+# and docs/)
+CLAUDE.md
+AGENTS.md
 .claude/
 .cursor/
 .aider*
