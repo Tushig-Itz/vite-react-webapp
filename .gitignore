@@ -5,14 +5,20 @@ node_modules/
 dist/
 build/
 
-# Database (generated at build time)
+# Database (generated at build time by scripts/build-db.js or import_data.py)
+# import_data.py writes build.db to the repo root; build-db.js writes public/build.db
 *.db
 *.sqlite
 *.sqlite3
 public/build.db
 
-# Datasheet PDFs (source material, not app code)
+# Datasheet PDFs (source material, not app code — see docs/SWITCH_AP_ROLLOUT.md)
 datasheets/*.pdf
+datasheets/*.PDF
+
+# Vendor spreadsheets used to populate the CSVs (the CSV is the source of truth)
+*.xlsx
+*.xls
 
 # Python
 __pycache__/
@@ -23,13 +29,24 @@ __pycache__/
 .env.local
 .env.production
 .env.*.local
+*.local
 
-# Editor
+# Editor / IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# AI agent session state
+.claude/
+.cursor/
+.aider*
+
+# Atomic-write and scratch leftovers
+*.tmp
+*.tmp.*
+.eslintcache
 
 # OS
 .DS_Store
@@ -39,6 +56,7 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # Vercel
 .vercel

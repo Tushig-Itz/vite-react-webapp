@@ -3,6 +3,7 @@ import {
     GENERAL_REQUIREMENTS,
     GENERAL_REQUIREMENTS_LABEL,
 } from './rfpBoilerplate.js';
+import { PRODUCT_TYPES } from '../productConfig.js';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -27,7 +28,6 @@ const estimateLines = (text, charsPerLine = 88) => {
     );
 };
 
-// Format a number with thousands separators; returns '' for empty values.
 const fmtNum = (formatNumber, v) => {
     if (v === null || v === undefined || v === '') return '';
     const r = formatNumber(v);
@@ -37,49 +37,34 @@ const fmtNum = (formatNumber, v) => {
 const has = (v) => v !== null && v !== undefined && String(v).trim() !== '';
 
 // ---------------------------------------------------------------------------
-// Company RFP template spec lines (order MUST match the company template)
+// Spec-line builder driven by a product's rfpSpecs config.
+// Each spec: { label, key, unit?, count?, keys?, sep? }. Keeps every line even
+// when blank (so the layout matches the company template), value left empty.
 // ---------------------------------------------------------------------------
-const buildRfpSpecLines = (device, formatNumber) => {
-    const d = device;
-    const g = (v, unit) => (has(v) ? `${v} ${unit}` : '');
+const buildSpecLines = (device, formatNumber, specs) => {
+    return specs.map((spec) => {
+        let value = '';
+        if (spec.keys) {
+            const anyHas = spec.keys.some((k) => has(device[k]));
+            if (anyHas) {
+                value = spec.keys.map((k) => (has(device[k]) ? device[k] : '-')).join(spec.sep || ' / ');
+                if (spec.unit) value += ' ' + spec.unit;
+            }
+        } else {
+            const v = device[spec.key];
+            if (has(v)) {
+                value = spec.count ? fmtNum(formatNumber, v) : String(v) + (spec.unit ? ' ' + spec.unit : '');
+            }
+        }
+        return `${spec.label}:${value ? ' ' + value : ''}`;
+    }).join('\n');
+};
 
-    const fwCombined = () => {
-        const a = d.firewall_throughput_1518_gbps;
-        const b = d.firewall_throughput_512_gbps;
-        const c = d.firewall_throughput_64_gbps;
-        if (!has(a) && !has(b) && !has(c)) return '';
-        return `${has(a) ? a : '-'} / ${has(b) ? b : '-'} / ${has(c) ? c : '-'} Gbps`;
-    };
-
-    const pair = (x, y) => {
-        if (!has(x) && !has(y)) return '';
-        return `${has(x) ? x : '-'} / ${has(y) ? y : '-'}`;
-    };
-
-    const lines = [
-        ['IPS Throughput', g(d.ips_throughput_gbps, 'Gbps')],
-        ['NGFW Throughput', g(d.ngfw_throughput_gbps, 'Gbps')],
-        ['Threat Protection Throughput', g(d.threat_protection_gbps, 'Gbps')],
-        ['Firewall Throughput (1518/512/64 byte)', fwCombined()],
-        ['Firewall Latency (64 byte UDP)', g(d.firewall_latency_us, 'µs')],
-        ['Firewall Throughput (Packets Per Second)', g(d.firewall_throughput_mpps, 'Mpps')],
-        ['Concurrent Sessions (TCP)', fmtNum(formatNumber, d.concurrent_sessions)],
-        ['New Sessions/Second (TCP)', fmtNum(formatNumber, d.new_sessions_per_sec)],
-        ['IPsec VPN Throughput (512 byte)', g(d.ipsec_vpn_throughput_gbps, 'Gbps')],
-        ['Gateway-to-Gateway IPsec Tunnels', fmtNum(formatNumber, d.gateway_to_gateway_vpn)],
-        ['Client-to-Gateway IPsec Tunnels', fmtNum(formatNumber, d.client_to_gateway_tunnels)],
-        ['SSL Inspection Throughput (IPS, avg. HTTPS)', g(d.ssl_inspection_throughput_gbps, 'Gbps')],
-        ['SSL Inspection CPS (IPS, avg. HTTPS)', fmtNum(formatNumber, d.ssl_inspection_cps)],
-        ['SSL Inspection Concurrent Sessions (IPS, avg. HTTPS)', fmtNum(formatNumber, d.ssl_inspection_concurrent_sessions)],
-        ['Virtual Domains (Default / Maximum)', pair(d.virtual_systems_default, d.virtual_systems_max)],
-        ['Hardware Accelerated GE WAN Ports', has(d.wan_ports) ? `${d.wan_ports}` : ''],
-        ['Hardware Accelerated GE RJ45 Ports', has(d.ge_rj45_ports) ? `${d.ge_rj45_ports}` : ''],
-        ['GE RJ45 FortiLink Port (Default)', has(d.fortilink_ports) ? `${d.fortilink_ports}` : ''],
-        ['Console Port (RJ45)', has(d.console_ports) ? `${d.console_ports}` : ''],
-        ['USB Port', has(d.usb_ports) ? `${d.usb_ports}` : ''],
-    ];
-
-    return lines.map(([label, value]) => `${label}:${value ? ' ' + value : ''}`).join('\n');
+const specDisplayValue = (device, spec, formatNumber) => {
+    const v = device[spec.key];
+    if (!has(v)) return 'N/A';
+    if (spec.count) return fmtNum(formatNumber, v) || 'N/A';
+    return spec.unit ? `${v} ${spec.unit}` : `${v}`;
 };
 
 const triggerDownload = async (workbook, filename) => {
@@ -96,20 +81,20 @@ const triggerDownload = async (workbook, filename) => {
 };
 
 // ---------------------------------------------------------------------------
-// RFP Match Export — company template format
+// RFP Match Export — company template format (works for any product type)
 // ---------------------------------------------------------------------------
 export const exportRfpMatch = async (device, formatNumber, rfpRequirements = {}, options = {}) => {
     try {
+        const product = options.product || PRODUCT_TYPES.firewall;
         const {
             quantity = '',
-            label = 'Firewall',
+            label = product.rfpLabel,
             includeGeneralRequirements = true,
         } = options;
 
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(device.model);
 
-        // Column widths matching the company template
         worksheet.getColumn(1).width = 4.8;
         worksheet.getColumn(2).width = 12.2;
         worksheet.getColumn(3).width = 74.5;
@@ -151,8 +136,8 @@ export const exportRfpMatch = async (device, formatNumber, rfpRequirements = {},
             itemNumber = 2;
         }
 
-        // --- Firewall block: two rows, A/B/C merged across both ---
-        const specText = buildRfpSpecLines(device, formatNumber);
+        // --- Device block: two rows, A/B/C merged across both ---
+        const specText = buildSpecLines(device, formatNumber, product.rfpSpecs);
 
         const topRow = worksheet.addRow([itemNumber, label, specText, 'Qty']);
         const bottomRow = worksheet.addRow(['', '', '', quantity]);
@@ -202,40 +187,15 @@ export const exportRfpMatch = async (device, formatNumber, rfpRequirements = {},
 };
 
 // ---------------------------------------------------------------------------
-// Spec definitions shared by the comparison exports
-// ---------------------------------------------------------------------------
-const COMPARISON_SPECS = [
-    { label: 'Firewall Throughput', key: 'firewall_throughput_1518_gbps', unit: 'Gbps' },
-    { label: 'NGFW Throughput', key: 'ngfw_throughput_gbps', unit: 'Gbps' },
-    { label: 'Threat Protection Throughput', key: 'threat_protection_gbps', unit: 'Gbps' },
-    { label: 'IPS Throughput', key: 'ips_throughput_gbps', unit: 'Gbps' },
-    { label: 'IPsec VPN Throughput', key: 'ipsec_vpn_throughput_gbps', unit: 'Gbps' },
-    { label: 'SSL Inspection Throughput', key: 'ssl_inspection_throughput_gbps', unit: 'Gbps' },
-    { label: 'Concurrent Sessions (TCP)', key: 'concurrent_sessions', count: true },
-    { label: 'New Session/Second (TCP)', key: 'new_sessions_per_sec', count: true },
-    { label: 'Gateway-to-Gateway Tunnels', key: 'gateway_to_gateway_vpn', count: true },
-    { label: 'Client-to-Gateway Tunnels', key: 'client_to_gateway_tunnels', count: true },
-    { label: 'Virtual Domains (Max)', key: 'virtual_systems_max', count: true },
-];
-
-const specDisplayValue = (device, spec, formatNumber) => {
-    const v = device[spec.key];
-    if (!has(v)) return 'N/A';
-    if (spec.count) return fmtNum(formatNumber, v) || 'N/A';
-    return `${v} ${spec.unit}`;
-};
-
-// ---------------------------------------------------------------------------
 // Mode 1: Single model with RFP comparison
 // ---------------------------------------------------------------------------
-export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements = {}) => {
+export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements = {}, product = PRODUCT_TYPES.firewall) => {
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(device.model);
-
         worksheet.columns = [{ width: 32 }, { width: 25 }, { width: 25 }, { width: 15 }];
 
-        const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
+        const titleRow = worksheet.addRow([`${product.fileTag} Comparison Sheet`]);
         titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
         titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
         worksheet.mergeCells('A1:D1');
@@ -279,14 +239,14 @@ export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements 
             for (let i = 1; i <= 4; i++) intRow.getCell(i).border = THIN_BORDER;
         }
 
-        COMPARISON_SPECS.forEach(addRow);
+        product.comparisonSpecs.forEach(addRow);
 
         if (device.release_year) addRow({ label: 'Release Year', key: 'release_year' });
         if (device.support_years) addRow({ label: 'Support Years', key: 'support_years' });
 
         await triggerDownload(
             workbook,
-            `FortiGate_${device.model}_RFP_${new Date().toISOString().split('T')[0]}.xlsx`
+            `${product.fileTag}_${device.model}_RFP_${new Date().toISOString().split('T')[0]}.xlsx`
         );
     } catch (error) {
         console.error('Export error:', error);
@@ -297,7 +257,7 @@ export const exportSingleWithRFP = async (device, formatNumber, rfpRequirements 
 // ---------------------------------------------------------------------------
 // Mode 2: Multiple models comparison (no RFP)
 // ---------------------------------------------------------------------------
-export const exportMultipleModels = async (devices, formatNumber) => {
+export const exportMultipleModels = async (devices, formatNumber, product = PRODUCT_TYPES.firewall) => {
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Comparison');
@@ -306,7 +266,7 @@ export const exportMultipleModels = async (devices, formatNumber) => {
         for (let i = 0; i < devices.length; i++) columns.push({ width: 25 });
         worksheet.columns = columns;
 
-        const titleRow = worksheet.addRow(['FortiGate Comparison Sheet']);
+        const titleRow = worksheet.addRow([`${product.fileTag} Comparison Sheet`]);
         titleRow.font = { size: 16, bold: true, color: { argb: 'FF2563EB' } };
         titleRow.alignment = { horizontal: 'center', vertical: 'middle' };
         worksheet.mergeCells(1, 1, 1, devices.length + 1);
@@ -331,17 +291,19 @@ export const exportMultipleModels = async (devices, formatNumber) => {
             }
         };
 
-        const intRow = worksheet.addRow(['Interface', ...devices.map(d => d.interface_raw || 'N/A')]);
-        const maxLength = Math.max(...devices.map(d => (d.interface_raw || '').length));
-        intRow.height = Math.max(40, Math.ceil(maxLength / 50) * 15);
-        intRow.getCell(1).alignment = { vertical: 'middle' };
-        intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
-        for (let i = 1; i <= devices.length + 1; i++) {
-            intRow.getCell(i).border = THIN_BORDER;
-            if (i >= 2) intRow.getCell(i).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+        if (devices.some(d => d.interface_raw)) {
+            const intRow = worksheet.addRow(['Interface', ...devices.map(d => d.interface_raw || 'N/A')]);
+            const maxLength = Math.max(...devices.map(d => (d.interface_raw || '').length));
+            intRow.height = Math.max(40, Math.ceil(maxLength / 50) * 15);
+            intRow.getCell(1).alignment = { vertical: 'middle' };
+            intRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
+            for (let i = 1; i <= devices.length + 1; i++) {
+                intRow.getCell(i).border = THIN_BORDER;
+                if (i >= 2) intRow.getCell(i).alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
+            }
         }
 
-        COMPARISON_SPECS.forEach(spec =>
+        product.comparisonSpecs.forEach(spec =>
             addComparisonRow(spec.label, d => specDisplayValue(d, spec, formatNumber))
         );
 
@@ -354,11 +316,10 @@ export const exportMultipleModels = async (devices, formatNumber) => {
 
         await triggerDownload(
             workbook,
-            `FortiGate_Comparison_${new Date().toISOString().split('T')[0]}.xlsx`
+            `${product.fileTag}_Comparison_${new Date().toISOString().split('T')[0]}.xlsx`
         );
     } catch (error) {
         console.error('Export error:', error);
         throw error;
     }
 };
-
